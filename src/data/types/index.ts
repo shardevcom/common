@@ -21,7 +21,12 @@ export interface DataAdapterConfig extends StoreConfig {
 }
 
 export interface DataAdapter {
-    fetch<TData>(resource: string, query?: Record<string, any>): Promise<DataProviderResponse<TData>>;
+    fetch<TData>(resource: string, params?: {
+        sort?: { field: string; order: 'asc' | 'desc' };
+        filter?: Record<string, any>;
+        fields?: string[];
+        include?: string[];
+    }): Promise<DataProviderResponse<TData>>
     upload<TData, TParams>(resource: string, data: Partial<TParams>): Promise<DataProviderResponse<TData>>
     fetchById<TData>(resource: string, id: string | number): Promise<DataProviderResponse<TData>>;
     insert<TData, TParams>(resource: string, data: Partial<TParams>): Promise<DataProviderResponse<TData>>;
@@ -33,6 +38,14 @@ export interface DataAdapter {
         filter?: Record<string, any>;
         fields?: string[]
         include?: string[]
+    }): Promise<DataProviderResponse<TData>>;
+    fetchOne<TData>(resource: string, params?: {
+        fields?: string;
+        filter?: Record<string, any>;
+        sort?: {
+            field: string;
+            order: 'asc' | 'desc';
+        };
     }): Promise<DataProviderResponse<TData>>;
     signIn<TData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TData>>;
     signUp<TData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TData>>;
