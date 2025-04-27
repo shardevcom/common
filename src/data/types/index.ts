@@ -22,38 +22,42 @@ export interface DataAdapterConfig extends StoreConfig {
 
 export interface DataAdapter {
     fetch<TData>(resource: string, params?: {
-        sort?: { field: string; order: 'asc' | 'desc' };
+        sort?: { field: string; order: 'asc' | 'desc' } | { field: string; order: 'asc' | 'desc' }[];
         filter?: Record<string, any>;
-        fields?: string[];
-        include?: string[];
+        fields?: string | string[];
+        include?: string | string[];
     }): Promise<DataProviderResponse<TData>>
-    upload<TData, TParams>(resource: string, data: Partial<TParams>): Promise<DataProviderResponse<TData>>
+    upload<TData>(resource: string, params: {
+        file: File | Blob | Buffer | (File | Blob | Buffer)[];
+        metadata?: Record<string, any>;
+        allowedTypes?: string | string[];
+    }): Promise<DataProviderResponse<TData>>
     fetchById<TData>(resource: string, id: string | number): Promise<DataProviderResponse<TData>>;
     insert<TData, TParams>(resource: string, data: Partial<TParams>): Promise<DataProviderResponse<TData>>;
     modify<TData, TParams>(resource: string, id: string | number, data: Partial<TParams>): Promise<DataProviderResponse<TData>>;
-    remove<TData>(resource: string, id: string | number): Promise<DataProviderResponse<TData>>;
+    remove<TData>(resource: string, params: { id?: string | number; filter?: Record<string, any> }): Promise<DataProviderResponse<TData>>;
     fetchMany<TData>(resource: string, params?: {
         pagination?: { page: number; perPage: number };
-        sort?: { field: string; order: 'asc' | 'desc' };
+        sort?: { field: string; order: 'asc' | 'desc' } | { field: string; order: 'asc' | 'desc' }[];
         filter?: Record<string, any>;
-        fields?: string[]
-        include?: string[]
+        fields?: string | string[];
+        include?: string | string[];
     }): Promise<DataProviderResponse<TData>>;
     fetchOne<TData>(resource: string, params?: {
-        fields?: string;
+        fields?: string | string[];
         filter?: Record<string, any>;
-        sort?: {
-            field: string;
-            order: 'asc' | 'desc';
-        };
+        sort?: { field: string; order: 'asc' | 'desc' } | { field: string; order: 'asc' | 'desc' }[];
     }): Promise<DataProviderResponse<TData>>;
+    count<TData = number>(resource: string, filter?: Record<string, any>): Promise<DataProviderResponse<TData>>;
+    subscribe<TData>(resource: string, callback: (data: TData) => void): void;
+    unsubscribe(resource: string): void;
     signIn<TData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TData>>;
     signUp<TData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TData>>;
     signOut(): Promise<DataProviderResponse>;
 }
 
 export interface DataProviderConfig {
-    adapter?: DataAdapter;
+    adapter?: Partial<DataAdapter>;
 }
 
 export abstract class BaseDataAdapter {
