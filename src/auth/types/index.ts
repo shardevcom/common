@@ -1,16 +1,17 @@
-import React from "react";
 
 export interface Role {
     id: string
     name: string
-    guard_name: string
+    description?: string
+    guard_name?: string
     permissions: Permission[]
 }
 
 export interface Permission {
     id: string
     name: string
-    guard_name: string
+    description?: string
+    guard_name?: string
     roles: Role[]
 }
 
