@@ -57,41 +57,44 @@ export interface SortCondition {
 }
 
 export interface DataAdapter {
-    fetch<TData>(resource: string, params?: {
+    fetch<TResponseData>(resource: string, params?: {
         sort?: SortCondition | SortCondition[];
         filter?: Record<string, GenericFilterValue>;
         fields?: string | string[];
         include?: string | string[];
-    }): Promise<DataProviderResponse<TData>>
-    upload<TData>(resource: string, params: {
+    }): Promise<DataProviderResponse<TResponseData>>
+    upload<TResponseData>(resource: string, params: {
         file: FileType;
         metadata?: Record<string, any>;
         storage?: StorageConfig;
-    }): Promise<DataProviderResponse<TData>>
-    fetchById<TData>(resource: string, id: string | number): Promise<DataProviderResponse<TData>>;
-    insert<TData, TParams = TData>(resource: string, data: Partial<TParams>): Promise<DataProviderResponse<TData>>;
-    modify<TData, TParams = TData>(resource: string, id: string | number, data: Partial<TParams>): Promise<DataProviderResponse<TData>>;
-    upsert<TData, TParams = TData>(resource: string, data: Partial<TParams>, uniqueFields?: [string, ...string[]]): Promise<DataProviderResponse<TData>>
-    remove<TData>(resource: string, params: { id?: string | number; filter?: Record<string, GenericFilterValue> }): Promise<DataProviderResponse<TData>>;
-    fetchMany<TData>(resource: string, params?: {
+    }): Promise<DataProviderResponse<TResponseData>>
+    fetchById<TResponseData>(resource: string, id: string | number): Promise<DataProviderResponse<TResponseData>>;
+    insert<TResponseData, TParams = TResponseData>(resource: string, data: Partial<TParams>): Promise<DataProviderResponse<TResponseData>>;
+    modify<TResponseData, TParams = TResponseData>(resource: string, id: string | number, data: Partial<TParams>): Promise<DataProviderResponse<TResponseData>>;
+    upsert<TResponseData, TParams = TResponseData>(resource: string, data: Partial<TParams>, uniqueFields?: [string, ...string[]]): Promise<DataProviderResponse<TResponseData>>
+    remove<TResponseData>(resource: string, params: { id?: string | number; filter?: Record<string, GenericFilterValue> }): Promise<DataProviderResponse<TResponseData>>;
+    fetchMany<TResponseData>(resource: string, params?: {
         pagination?: { page: number; perPage: number };
         sort?: SortCondition | SortCondition[];
         filter?: Record<string, GenericFilterValue>;
         fields?: string | string[];
         include?: string | string[];
-    }): Promise<DataProviderResponse<TData>>;
-    fetchOne<TData>(resource: string, params?: {
+    }): Promise<DataProviderResponse<TResponseData>>;
+    fetchOne<TResponseData>(resource: string, params?: {
         fields?: string | string[];
         filter?: Record<string, GenericFilterValue>;
         sort?: SortCondition | SortCondition[];
-    }): Promise<DataProviderResponse<TData>>;
-    count<TData = number>(resource: string, filter?: Record<string, GenericFilterValue>): Promise<DataProviderResponse<TData>>;
-    subscribe<TData>(resource: string, callback: (data: TData) => void): void;
+    }): Promise<DataProviderResponse<TResponseData>>;
+    count<TResponseData = number>(resource: string, filter?: Record<string, GenericFilterValue>): Promise<DataProviderResponse<TResponseData>>;
+    subscribe<TResponseData>(resource: string, callback: (data: TResponseData) => void): void;
     unsubscribe(resource: string): void;
-    signIn<TData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TData>>;
-    signUp<TData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TData>>;
-    setAuthUser<TData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TData>>;
-    getAuthUser<TData extends AuthUser = AuthUser>(): Promise<DataProviderResponse<TData>>;
+    signIn<TResponseData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TResponseData>>;
+    signUp<TResponseData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TResponseData>>;
+    setCurrentAuthUser<TResponseData extends AuthUser = AuthUser, TParams = unknown>(data: TParams): Promise<DataProviderResponse<TResponseData>>;
+    getCurrentAuthUser<TResponseData extends AuthUser = AuthUser>(): Promise<DataProviderResponse<TResponseData>>;
+    createAuthUser<TResponseData extends AuthUser = AuthUser, TParams = unknown>(data: TParams): Promise<DataProviderResponse<TResponseData>>;
+    removeAuthUser<TResponseData extends AuthUser = AuthUser, TOptions = unknown>(id: string, options?: TOptions): Promise<DataProviderResponse<TResponseData>>;
+    inviteAuthUserByEmail<TResponseData, TOptions = unknown>(email: string, options?: TOptions): Promise<DataProviderResponse<TResponseData>>;
     signOut(): Promise<DataProviderResponse>;
 }
 
