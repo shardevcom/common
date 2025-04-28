@@ -90,6 +90,8 @@ export interface DataAdapter {
     unsubscribe(resource: string): void;
     signIn<TData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TData>>;
     signUp<TData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TData>>;
+    setAuthUser<TData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TData>>;
+    getAuthUser<TData extends AuthUser = AuthUser>(): Promise<DataProviderResponse<TData>>;
     signOut(): Promise<DataProviderResponse>;
 }
 
