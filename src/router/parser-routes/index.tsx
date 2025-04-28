@@ -1,14 +1,10 @@
 import React from "react";
 import {RouteObject} from "react-router-dom";
 import ProtectedRoute from "../components/protected-route";
-import Unauthorized from "../components/unauthorized";
 import {RouteConfig} from "../types";
 
-
 export const parseRoutes = (routes: RouteConfig[]): RouteObject[] => {
-    const protectedRoutes = routes.map(({path, element, redirectLogic, children, id, index}) => {
-
-
+    return routes.map(({path, element, redirectLogic, children, id, index}) => {
         if (index) {
             return {
                 index: true,
@@ -18,23 +14,10 @@ export const parseRoutes = (routes: RouteConfig[]): RouteObject[] => {
         }
 
         return {
-            path,
+            path: path?.startsWith('/') ? path.slice(1) : path,
             id,
             element: <ProtectedRoute redirectLogic={redirectLogic}>{element()}</ProtectedRoute>,
             children: children ? parseRoutes(children) : undefined,
         } satisfies RouteObject;
     });
-
-    const hasUnauthorizedRoute = routes.some((route) => (route.path === "/unauthorized" || route.id === "/unauthorized"));
-
-    if (!hasUnauthorizedRoute) {
-        protectedRoutes.push({
-            id: "unauthorized",
-            path: "/unauthorized",
-            element: <Unauthorized/>,
-            children: undefined
-        } satisfies RouteObject);
-    }
-
-    return protectedRoutes;
 };
