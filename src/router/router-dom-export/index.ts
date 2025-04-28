@@ -7,6 +7,7 @@ export {
     useOutletContext,
     useRoutes,
     BrowserRouter,
+    useSearchParams,
     Link
 } from "react-router-dom";
 
