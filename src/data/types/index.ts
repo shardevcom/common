@@ -56,10 +56,18 @@ export interface SortCondition {
     order: 'asc' | 'desc'
 }
 
+export type LogicalOperator = 'AND' | 'OR';
+
+export type LogicalFilter = {
+    [key in LogicalOperator]?: Array<Record<string, GenericFilterValue>>;
+};
+
+export type QueryFilter = Record<string, GenericFilterValue> & LogicalFilter;
+
 export interface DataAdapter {
     fetch<TResponseData>(resource: string, params?: {
         sort?: SortCondition | SortCondition[];
-        filter?: Record<string, GenericFilterValue>;
+        filter?: QueryFilter;
         fields?: string | string[];
         include?: string | string[];
     }): Promise<DataProviderResponse<TResponseData>>
@@ -72,20 +80,20 @@ export interface DataAdapter {
     insert<TResponseData, TParams = TResponseData>(resource: string, data: Partial<TParams>): Promise<DataProviderResponse<TResponseData>>;
     modify<TResponseData, TParams = TResponseData>(resource: string, id: string | number, data: Partial<TParams>): Promise<DataProviderResponse<TResponseData>>;
     upsert<TResponseData, TParams = TResponseData>(resource: string, data: Partial<TParams>, uniqueFields?: [string, ...string[]]): Promise<DataProviderResponse<TResponseData>>
-    remove<TResponseData>(resource: string, params: { id?: string | number; filter?: Record<string, GenericFilterValue> }): Promise<DataProviderResponse<TResponseData>>;
+    remove<TResponseData>(resource: string, params: { id?: string | number; filter?: QueryFilter; }): Promise<DataProviderResponse<TResponseData>>;
     fetchMany<TResponseData>(resource: string, params?: {
         pagination?: { page: number; perPage: number };
         sort?: SortCondition | SortCondition[];
-        filter?: Record<string, GenericFilterValue>;
+        filter?: QueryFilter;
         fields?: string | string[];
         include?: string | string[];
     }): Promise<DataProviderResponse<TResponseData>>;
     fetchOne<TResponseData>(resource: string, params?: {
         fields?: string | string[];
-        filter?: Record<string, GenericFilterValue>;
+        filter?: QueryFilter;
         sort?: SortCondition | SortCondition[];
     }): Promise<DataProviderResponse<TResponseData>>;
-    count<TResponseData = number>(resource: string, filter?: Record<string, GenericFilterValue>): Promise<DataProviderResponse<TResponseData>>;
+    count<TResponseData = number>(resource: string, filter?: QueryFilter): Promise<DataProviderResponse<TResponseData>>;
     subscribe<TResponseData>(resource: string, callback: (data: TResponseData) => void): void;
     unsubscribe(resource: string): void;
     signIn<TResponseData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TResponseData>>;
