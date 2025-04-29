@@ -56,13 +56,11 @@ export interface SortCondition {
     order: 'asc' | 'desc'
 }
 
-export type LogicalOperator = 'AND' | 'OR';
-
-export type LogicalFilter = {
-    [key in LogicalOperator]?: Array<Record<string, GenericFilterValue>>;
+export type QueryFilter = {
+    [field: string]: GenericFilterValue | QueryFilter[] | undefined;
+    AND?: QueryFilter[];
+    OR?: QueryFilter[];
 };
-
-export type QueryFilter = Record<string, GenericFilterValue> & LogicalFilter;
 
 export interface DataAdapter {
     fetch<TResponseData>(resource: string, params?: {
