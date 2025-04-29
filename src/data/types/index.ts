@@ -99,6 +99,7 @@ export interface DataAdapter {
     setCurrentAuthUser<TResponseData extends AuthUser = AuthUser, TParams = unknown>(data: TParams): Promise<DataProviderResponse<TResponseData>>;
     getCurrentAuthUser<TResponseData extends AuthUser = AuthUser>(): Promise<DataProviderResponse<TResponseData>>;
     createAuthUser<TResponseData extends AuthUser = AuthUser, TParams = unknown>(data: TParams): Promise<DataProviderResponse<TResponseData>>;
+    modifyAuthUser<TResponseData extends AuthUser = AuthUser, TParams = unknown>(id: string, data?: TParams): Promise<DataProviderResponse<TResponseData>>;
     removeAuthUser<TResponseData extends AuthUser = AuthUser, TOptions = unknown>(id: string, options?: TOptions): Promise<DataProviderResponse<TResponseData>>;
     inviteAuthUserByEmail<TResponseData, TOptions = unknown>(email: string, options?: TOptions): Promise<DataProviderResponse<TResponseData>>;
     signOut(): Promise<DataProviderResponse>;
