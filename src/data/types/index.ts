@@ -87,9 +87,10 @@ export interface DataAdapter {
         include?: string | string[];
     }): Promise<DataProviderResponse<TResponseData>>;
     fetchOne<TResponseData>(resource: string, params?: {
-        fields?: string | string[];
-        filter?: QueryFilter;
         sort?: SortCondition | SortCondition[];
+        filter?: QueryFilter;
+        fields?: string | string[];
+        include?: string | string[];
     }): Promise<DataProviderResponse<TResponseData>>;
     count<TResponseData = number>(resource: string, filter?: QueryFilter): Promise<DataProviderResponse<TResponseData>>;
     subscribe<TResponseData>(resource: string, callback: (data: TResponseData) => void): void;
