@@ -76,7 +76,7 @@ export interface DataAdapter {
     }): Promise<DataProviderResponse<TResponseData>>
     fetchById<TResponseData>(resource: string, id: string | number): Promise<DataProviderResponse<TResponseData>>;
     insert<TResponseData, TParams = TResponseData>(resource: string, data: Partial<TParams>): Promise<DataProviderResponse<TResponseData>>;
-    modify<TResponseData, TParams = TResponseData>(resource: string, id: string | number, data: Partial<TParams>): Promise<DataProviderResponse<TResponseData>>;
+    modify<TResponseData, TParams = TResponseData>(resource: string, params: { id?: string | number; filter?: QueryFilter; }, data: Partial<TParams>): Promise<DataProviderResponse<TResponseData>>;
     upsert<TResponseData, TParams = TResponseData>(resource: string, data: Partial<TParams>, uniqueFields?: [string, ...string[]]): Promise<DataProviderResponse<TResponseData>>
     remove<TResponseData>(resource: string, params: { id?: string | number; filter?: QueryFilter; }): Promise<DataProviderResponse<TResponseData>>;
     fetchMany<TResponseData>(resource: string, params?: {
