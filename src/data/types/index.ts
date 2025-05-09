@@ -69,7 +69,7 @@ export interface DataAdapter {
         fields?: string | string[];
         include?: string | string[];
     }): Promise<DataProviderResponse<TResponseData>>
-    upload<TResponseData>(resource: string, params: {
+    upload?<TResponseData>(resource: string, params: {
         file: FileType;
         metadata?: Record<string, any>;
         storage?: StorageConfig;
@@ -92,18 +92,18 @@ export interface DataAdapter {
         fields?: string | string[];
         include?: string | string[];
     }): Promise<DataProviderResponse<TResponseData>>;
-    count<TResponseData = number>(resource: string, filter?: QueryFilter): Promise<DataProviderResponse<TResponseData>>;
-    subscribe<TResponseData>(resource: string, callback: (data: TResponseData) => void): void;
-    unsubscribe(resource: string): void;
-    signIn<TResponseData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TResponseData>>;
-    signUp<TResponseData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TResponseData>>;
-    setCurrentAuthUser<TResponseData extends AuthUser = AuthUser, TParams = unknown>(data: TParams): Promise<DataProviderResponse<TResponseData>>;
-    getCurrentAuthUser<TResponseData extends AuthUser = AuthUser>(): Promise<DataProviderResponse<TResponseData>>;
-    createAuthUser<TResponseData extends AuthUser = AuthUser, TParams = unknown>(data: TParams): Promise<DataProviderResponse<TResponseData>>;
-    modifyAuthUser<TResponseData extends AuthUser = AuthUser, TParams = unknown>(id: string, data?: TParams): Promise<DataProviderResponse<TResponseData>>;
-    removeAuthUser<TResponseData extends AuthUser = AuthUser, TOptions = unknown>(id: string, options?: TOptions): Promise<DataProviderResponse<TResponseData>>;
-    inviteAuthUserByEmail<TResponseData, TOptions = unknown>(email: string, options?: TOptions): Promise<DataProviderResponse<TResponseData>>;
-    signOut(): Promise<DataProviderResponse>;
+    count?<TResponseData = number>(resource: string, filter?: QueryFilter): Promise<DataProviderResponse<TResponseData>>;
+    subscribe?<TResponseData>(resource: string, callback: (data: TResponseData) => void): void;
+    unsubscribe?(resource: string): void;
+    signIn?<TResponseData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TResponseData>>;
+    signUp?<TResponseData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TResponseData>>;
+    setCurrentAuthUser?<TResponseData extends AuthUser = AuthUser, TParams = unknown>(data: TParams): Promise<DataProviderResponse<TResponseData>>;
+    getCurrentAuthUser?<TResponseData extends AuthUser = AuthUser>(): Promise<DataProviderResponse<TResponseData>>;
+    createAuthUser?<TResponseData extends AuthUser = AuthUser, TParams = unknown>(data: TParams): Promise<DataProviderResponse<TResponseData>>;
+    modifyAuthUser?<TResponseData extends AuthUser = AuthUser, TParams = unknown>(id: string, data?: TParams): Promise<DataProviderResponse<TResponseData>>;
+    removeAuthUser?<TResponseData extends AuthUser = AuthUser, TOptions = unknown>(id: string, options?: TOptions): Promise<DataProviderResponse<TResponseData>>;
+    inviteAuthUserByEmail?<TResponseData, TOptions = unknown>(email: string, options?: TOptions): Promise<DataProviderResponse<TResponseData>>;
+    signOut?(): Promise<DataProviderResponse>;
 }
 
 export interface DataProviderConfig {
