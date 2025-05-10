@@ -7,7 +7,7 @@ interface DataProviderProps {
     children: React.ReactNode;
 }
 
-export const RealTimeContextProvider: React.FC<DataProviderProps> = ({ adapter, children }) => {
+export const RealTimeProvider: React.FC<DataProviderProps> = ({ adapter, children }) => {
     return (
         <RealtimeContext.Provider value={{ adapter }}>
             {children}
@@ -15,6 +15,6 @@ export const RealTimeContextProvider: React.FC<DataProviderProps> = ({ adapter, 
     );
 };
 
-RealTimeContextProvider.displayName = "RealTimeProvider";
+RealTimeProvider.displayName = "RealTimeProvider";
 
 

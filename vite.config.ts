@@ -13,9 +13,13 @@ export default defineConfig({
   ],
   build: {
     lib: {
-      entry: resolve(__dirname, 'src/index.ts'),
+      entry: {
+        index: resolve(__dirname, 'src/index.ts'),
+        'adapters/auth/ability-adapter': resolve(__dirname, 'src/adapters/auth/ability.ts'),
+        'adapters/data/rest-adapter': resolve(__dirname, 'src/adapters/data/rest.ts'),
+      },
       name: '@shadevcom/common',
-      fileName: (format) => `index.${format}.js`,
+      fileName: (format, entryName) => `${entryName}.${format}.js`,
       formats: ['es', 'cjs'],
     },
     rollupOptions: {

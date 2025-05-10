@@ -19,7 +19,6 @@ export function createStoreFactory<Slices extends ReducersMapObject>(config: Sto
     };
 
 
-    // Crear el encriptador/desencriptador
     const encryptor = createEncryptor(secretKey);
 
     // Configuración de persistencia

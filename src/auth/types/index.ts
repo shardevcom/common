@@ -18,6 +18,7 @@ export interface Permission {
 export interface AuthUser {
     id?: string | null | undefined
     name?: string
+    email?: string
     roles?: Role[]
     permissions?: Permission[]
     refresh_token?: string

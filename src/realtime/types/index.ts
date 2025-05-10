@@ -11,10 +11,30 @@ export type RealtimeSubscription = {
   unsubscribe: () => void;
 };
 
+export type GenericRealtimeFilterOperator = string;
+
+export interface GenericRealtimeFilterCondition {
+    operator: GenericRealtimeFilterOperator;
+    value: unknown;
+}
+
+export type GenericRealtimeFilterValue =
+    | string
+    | number
+    | boolean
+    | Array<string | number | boolean>
+    | GenericRealtimeFilterCondition;
+
+export type RealtimeQueryFilter = {
+    [field: string]: GenericRealtimeFilterValue | RealtimeQueryFilter[] | undefined;
+    AND?: RealtimeQueryFilter[];
+    OR?: RealtimeQueryFilter[];
+};
+
 export type RealtimeFilter = {
   table: string;
   schema?: string;
-  filter?: string | Record<string, any>;
+  filter?: string | RealtimeQueryFilter;
   event?: '*' | 'INSERT' | 'UPDATE' | 'DELETE';
 };
 

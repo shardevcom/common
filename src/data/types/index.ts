@@ -1,7 +1,28 @@
 import {Store, UnknownAction} from "redux";
-import {StoreConfig} from "../../types";
 import {AuthUser} from "../../auth";
 import {Reducer} from "@reduxjs/toolkit";
+
+export interface PaginatedData<T> {
+    current_page: number;
+    data: T[];
+    first_page_url: string;
+    from: number | null;
+    last_page: number;
+    last_page_url: string;
+    links: PaginationLink[];
+    next_page_url: string | null;
+    path: string;
+    per_page: number;
+    prev_page_url: string | null;
+    to: number | null;
+    total: number;
+}
+
+export interface PaginationLink {
+    url: string | null;
+    label: string;
+    active: boolean;
+}
 
 
 export interface DataProviderResponse<T = any> {
@@ -21,7 +42,7 @@ export interface StorageConfig {
     [key: string]: any;
 }
 
-export interface DataAdapterConfig extends StoreConfig {
+export interface DataAdapterConfig {
     token?: string
     baseURL?: string;
     store?: Store;
