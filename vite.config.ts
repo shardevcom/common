@@ -15,8 +15,8 @@ export default defineConfig({
     lib: {
       entry: {
         index: resolve(__dirname, 'src/index.ts'),
-        'adapters/auth/ability-adapter': resolve(__dirname, 'src/adapters/auth/ability.ts'),
-        'adapters/data/rest-adapter': resolve(__dirname, 'src/adapters/data/rest.ts'),
+        'adapters/auth/ability-adapter': resolve(__dirname, 'src/adapters/auth/ability'),
+        'adapters/data/rest-adapter': resolve(__dirname, 'src/adapters/data/rest'),
       },
       name: '@shadevcom/common',
       fileName: (format, entryName) => `${entryName}.${format}.js`,
