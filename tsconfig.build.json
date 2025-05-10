@@ -12,8 +12,9 @@
     "strict": true,
     "skipLibCheck": true,
     "jsx": "react",
-    "composite": true
+    "composite": true,
+    "allowJs": true
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "test", "**/*.test.ts", "**/*.spec.ts"]
+  "exclude": ["node_modules"]
 }
