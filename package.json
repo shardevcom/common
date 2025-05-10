@@ -1,6 +1,6 @@
 {
   "name": "@shadevcom/common",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "author": "Elbert Tous",
   "license": "MIT",
   "type": "module",
@@ -14,12 +14,14 @@
       "require": "./dist/index.cjs.js"
     },
     "./auth/casl-ability": {
-      "import": "./dist/adapters/auth/ability.js",
-      "types": "./dist/adapters/auth/ability.d.ts"
+      "types": "./dist/adapters/auth/ability-adapter.d.ts",
+      "import": "./dist/adapters/auth/ability-adapter.js",
+      "require": "./dist/adapters/auth/ability-adapter.cjs.js"
     },
     "./data/rest-adapter": {
-      "import": "./dist/adapters/data/rest.js",
-      "types": "./dist/adapters/data/rest.d.ts"
+      "types": "./dist/adapters/data/rest-adapter.d.ts",
+      "import": "./dist/adapters/data/rest-adapter.js",
+      "require": "./dist/adapters/data/rest-adapter.cjs.js"
     }
   },
   "files": [
