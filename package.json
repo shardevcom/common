@@ -1,6 +1,6 @@
 {
   "name": "@shadevcom/common",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "author": "Elbert Tous",
   "license": "MIT",
   "type": "module",
@@ -22,6 +22,21 @@
       "types": "./dist/adapters/data/rest-adapter.d.ts",
       "import": "./dist/adapters/data/rest-adapter.js",
       "require": "./dist/adapters/data/rest-adapter.cjs.js"
+    },
+    "./data/supabase-adapter": {
+      "types": "./dist/adapters/data/supabase-adapter.d.ts",
+      "import": "./dist/adapters/data/supabase-adapter.js",
+      "require": "./dist/adapters/data/supabase-adapter.cjs.js"
+    },
+    "./realtime/firebase-adapter": {
+      "types": "./dist/adapters/data/supabase-adapter.d.ts",
+      "import": "./dist/adapters/data/supabase-adapter.js",
+      "require": "./dist/adapters/data/supabase-adapter.cjs.js"
+    },
+    "./realtime/reverb-adapter": {
+      "types": "./dist/adapters/realtime/reverb-adapter.d.ts",
+      "import": "./dist/adapters/realtime/reverb-adapter.js",
+      "require": "./dist/adapters/realtime/reverb-adapter.cjs.js"
     }
   },
   "files": [
@@ -37,7 +52,11 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "@casl/ability": "^6.7.3",
-    "axios": "^1.9.0"
+    "axios": "^1.9.0",
+    "firebase": "^11.3.1",
+    "socket.io-client": "^4.8.1",
+    "@supabase/supabase-js": "^2.39.7",
+    "uuid": "^11.1.0"
   },
   "peerDependenciesMeta": {
     "@casl/ability": {

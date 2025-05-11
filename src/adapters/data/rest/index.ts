@@ -19,7 +19,7 @@ export class DataRestAdapter extends BaseDataAdapter implements DataAdapter {
         console.log("BaseURL en constructor:", this.baseURL);
 
         const defaultConfig: AxiosRequestConfig = {
-            baseURL: `${this.baseURL}/api`,
+            baseURL: this.baseURL,
             timeout: 10000,
             headers: {
                 'Access-Control-Allow-Origin': '*',

@@ -1,12 +1,4 @@
 
-export type RealtimeEvent = {
-  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
-  table: string;
-  schema: string;
-  record: any;
-  oldRecord?: any;
-};
-
 export type RealtimeSubscription = {
   unsubscribe: () => void;
 };
@@ -18,12 +10,23 @@ export interface GenericRealtimeFilterCondition {
     value: unknown;
 }
 
+export type EventTypeRealtime = '*' | 'INSERT' | 'UPDATE' | 'DELETE' | undefined;
+
+export type RealtimeEvent = {
+    eventType: EventTypeRealtime;
+    table: string;
+    schema: string;
+    record: any;
+    oldRecord?: any;
+};
+
 export type GenericRealtimeFilterValue =
     | string
     | number
     | boolean
-    | Array<string | number | boolean>
-    | GenericRealtimeFilterCondition;
+    | Array<string | number | boolean | EventTypeRealtime>
+    | GenericRealtimeFilterCondition
+    | EventTypeRealtime;
 
 export type RealtimeQueryFilter = {
     [field: string]: GenericRealtimeFilterValue | RealtimeQueryFilter[] | undefined;
@@ -35,7 +38,7 @@ export type RealtimeFilter = {
   table: string;
   schema?: string;
   filter?: string | RealtimeQueryFilter;
-  event?: '*' | 'INSERT' | 'UPDATE' | 'DELETE';
+  event?: EventTypeRealtime;
 };
 
 export interface RealtimeAdapter {

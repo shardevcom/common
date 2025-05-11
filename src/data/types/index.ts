@@ -89,12 +89,12 @@ export interface DataAdapter {
         filter?: QueryFilter;
         fields?: string | string[];
         include?: string | string[];
-    }): Promise<DataProviderResponse<TResponseData>>
+    }): Promise<DataProviderResponse<TResponseData>>;
     upload?<TResponseData>(resource: string, params: {
         file: FileType;
         metadata?: Record<string, any>;
         storage?: StorageConfig;
-    }): Promise<DataProviderResponse<TResponseData>>
+    }): Promise<DataProviderResponse<TResponseData>>;
     fetchById<TResponseData>(resource: string, id: string | number): Promise<DataProviderResponse<TResponseData>>;
     insert<TResponseData, TParams = TResponseData>(resource: string, data: Partial<TParams>): Promise<DataProviderResponse<TResponseData>>;
     modify<TResponseData, TParams = TResponseData>(resource: string, params: { id?: string | number; filter?: QueryFilter; }, data: Partial<TParams>): Promise<DataProviderResponse<TResponseData>>;
