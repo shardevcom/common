@@ -1,6 +1,6 @@
 {
   "name": "@shadevcom/common",
-  "version": "0.3.3",
+  "version": "0.3.4",
   "author": "Elbert Tous",
   "license": "MIT",
   "type": "module",
@@ -14,27 +14,27 @@
       "require": "./dist/index.cjs.js"
     },
     "./auth/casl-ability": {
-      "types": "./dist/adapters/auth/ability-adapter.d.ts",
+      "types": "./dist/adapters/auth/ability/index.d.ts",
       "import": "./dist/adapters/auth/ability-adapter.es.js",
       "require": "./dist/adapters/auth/ability-adapter.cjs.js"
     },
     "./data/rest-adapter": {
-      "types": "./dist/adapters/data/rest-adapter.d.ts",
+      "types": "./dist/adapters/data/rest/index.d.ts",
       "import": "./dist/adapters/data/rest-adapter.es.js",
       "require": "./dist/adapters/data/rest-adapter.cjs.js"
     },
     "./data/supabase-adapter": {
-      "types": "./dist/adapters/data/supabase-adapter.d.ts",
+      "types": "./dist/adapters/data/supabase/index.d.ts",
       "import": "./dist/adapters/data/supabase-adapter.es.js",
       "require": "./dist/adapters/data/supabase-adapter.cjs.js"
     },
     "./realtime/firebase-adapter": {
-      "types": "./dist/adapters/data/supabase-adapter.d.ts",
-      "import": "./dist/adapters/data/supabase-adapter.es.js",
-      "require": "./dist/adapters/data/supabase-adapter.cjs.js"
+      "types": "./dist/adapters/realtime/firebase/index.d.ts",
+      "import": "./dist/adapters/realtime/firebase-adapter.es.js",
+      "require": "./dist/adapters/realtime/firebase-adapter.cjs.js"
     },
     "./realtime/reverb-adapter": {
-      "types": "./dist/adapters/realtime/reverb-adapter.d.ts",
+      "types": "./dist/adapters/realtime/rever/index.d.ts",
       "import": "./dist/adapters/realtime/reverb-adapter.es.js",
       "require": "./dist/adapters/realtime/reverb-adapter.cjs.js"
     }
