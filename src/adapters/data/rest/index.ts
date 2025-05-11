@@ -158,7 +158,11 @@ export class DataRestAdapter extends BaseDataAdapter implements DataAdapter {
             }
 
             // Axios establecerá automáticamente el Content-Type correcto (multipart/form-data)
-            const response = await this.client.post<DataProviderResponse<TResponseData>>(`/${resource}/upload`, formData); // Endpoint común para subidas
+            const response = await this.client.post<DataProviderResponse<TResponseData>>(`/${resource}/upload`, formData, {
+                headers: {
+                    'Content-Type': undefined,
+                }
+            }); // Endpoint común para subidas
             return response.data;
         } catch (error: any) {
             return Promise.reject(error);
