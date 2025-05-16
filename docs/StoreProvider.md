@@ -55,6 +55,11 @@ Este paquete extiende los hooks típicos de Redux para trabajar con tipos inferi
 ```tsx
 const authUser = useAppSelector(state => state.auth.authUser);
 const dispatch = useAppDispatch();
+const storeContext = useStoreContext();
+
+storeContext.store
+
+storeContext.persist
 
 dispatch(setAuth({ name: 'Juan' }));
 ```
