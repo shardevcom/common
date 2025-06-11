@@ -117,6 +117,7 @@ export interface DataAdapter {
     subscribe?<TResponseData>(resource: string, callback: (data: TResponseData) => void): void;
     unsubscribe?(resource: string): void;
     signIn?<TResponseData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TResponseData>>;
+    signInWithOAuth?<TResponseData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TResponseData>>;
     signUp?<TResponseData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TResponseData>>;
     setCurrentAuthUser?<TResponseData extends AuthUser = AuthUser, TParams = unknown>(data: TParams): Promise<DataProviderResponse<TResponseData>>;
     getCurrentAuthUser?<TResponseData extends AuthUser = AuthUser>(): Promise<DataProviderResponse<TResponseData>>;

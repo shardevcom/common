@@ -1,6 +1,6 @@
 import {
     createClient,
-    RealtimeChannel,
+    RealtimeChannel, SignInWithOAuthCredentials,
     SignInWithPasswordCredentials,
     SignUpWithPasswordCredentials,
     SupabaseClient,
@@ -420,6 +420,19 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
         }
     }
 
+    async signInWithOAuth?<TResponseData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TResponseData>> {
+        try {
+            const {
+                data,
+                error
+            } = await this.client.auth.signInWithOAuth(credentials as SignInWithOAuthCredentials);
+            return this.handleAuthResponse(data, error, 'Signed in successfully', error ? '401' : '200');
+        } catch (error: any) {
+            return this.createDataProviderResponse<TResponseData>(null, error, error.status);
+        }
+    }
+
+
     async signUp?<TResponseData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TResponseData>> {
         try {
             const {data, error} = await this.client.auth.signUp(credentials as SignUpWithPasswordCredentials);
@@ -447,6 +460,8 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
             return this.createDataProviderResponse(null, error, error.status, 'An error occurred during sign out');
         }
     }
+
+
 
     async count?<TResponseData = number>(resource: string, filter?: QueryFilter): Promise<DataProviderResponse<TResponseData>> {
         return this.handleRequest(async (client) => {
