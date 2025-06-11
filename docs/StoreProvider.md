@@ -1,12 +1,12 @@
 ## 🔌 StoreProvider
 
-El componente `StoreProvider` del paquete `@shadevcom/common` permite inyectar el store global de Redux Toolkit en una aplicación React.  
+El componente `StoreProvider` del paquete `@shardev/common` permite inyectar el store global de Redux Toolkit en una aplicación React.  
 Soporta **persistencia automática del estado** y **cifrado del almacenamiento local**.
 
 ### 📦 Importación
 
 ```ts
-import { StoreProvider, StoreConfig } from '@shadevcom/common';
+import { StoreProvider, StoreConfig } from '@shardev/common';
 ```
 
 ### ⚙️ Configuración
@@ -25,7 +25,7 @@ interface StoreConfig<Slices> {
 ### 🚀 Uso básico
 
 ```tsx
-import { StoreProvider } from '@shadevcom/common';
+import { StoreProvider } from '@shardev/common';
 import { rootSlices } from './store';
 
 const storeConfig = {

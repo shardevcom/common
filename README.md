@@ -1,13 +1,12 @@
-# 📦 @shadevcom/common
+# 📦 @shardev/common
 
-Utilidades comunes para aplicaciones hechas en **React**, diseñadas para proyectos mantenidos por [Shardev](https://github.com/shardev). Ofrece una base sólida y desacoplada para construir aplicaciones modernas administrando estados, temas, proveedores de datos, control de accesos, enrutamientos desacoplados y más.
+Utilidades comunes para aplicaciones hechas en **React**, diseñadas para proyectos mantenidos por [Shardev](https://github.com/shardevcom). Ofrece una base sólida y desacoplada para construir aplicaciones modernas administrando estados, temas, proveedores de datos, control de accesos, enrutamientos desacoplados y más.
 
 ---
 
 ## 📦 Características principales
 
 - **Persistencia y cifrado de estado global** con [`StoreProvider`](./docs/StoreProvider.md)
-- **Soporte para temas** con [`ThemeProvider`](./docs/ThemeProvider.md)
 - **Control de acceso** con [`AuthProvider`](./docs/AuthProvider.md) y adaptadores configurables:
 - **Integración de APIs con adaptadores customizables** con [`DataProvider`](./docs/DataProvider.md)
 - **Integración de Real Time con adaptadores customizables** con [`RealTimeProvider`](./docs/RealTimeProvider.md)
@@ -18,7 +17,7 @@ Utilidades comunes para aplicaciones hechas en **React**, diseñadas para proyec
 ## 🚀 Instalación
 
 ```bash 
-  npm install @shadevcom/common
+  npm install @shardev/common
 ```
 
 ## 🛠️ Ejemplo de uso general
@@ -29,7 +28,7 @@ import React, { Suspense } from "react";
 import { createRoot } from 'react-dom/client';
 import { rootSlices } from "./store";
 import { theme } from "./theme";
-import { StoreConfig, StoreProvider, ThemeProvider } from "@shadevcom/common";
+import { StoreConfig, StoreProvider, ThemeProvider } from "@shardev/common";
 import WebApp from "./pages";
 
 export const appKey: string = (import.meta.env?.APP_KEY ?? 'my-secret-key');
@@ -65,7 +64,7 @@ import {
     useStoreContext,
     useAppSelector,
     RouterProvider
-} from "@shadevcom/common";
+} from "@shardev/common";
 import {AuthAbilityAdapter} from "../adapters/auth/casl-ability";
 import {DataRestAdapter} from "../adapters/data";
 import routes from "../routes";
@@ -102,4 +101,4 @@ export default WebApp;
 ---
 ## 🧾 Créditos
 
-**`@shadevcom/common`** — Mantenido por [Shardev](https://shardev.com) 🚀
+**`@shardev/common`** — Mantenido por [Shardev](https://shardev.com) 🚀

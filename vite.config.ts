@@ -21,7 +21,7 @@ export default defineConfig({
         'adapters/realtime/firebase-adapter': resolve(__dirname, 'src/adapters/realtime/firebase'),
         'adapters/realtime/reverb-adapter': resolve(__dirname, 'src/adapters/realtime/reverb'),
       },
-      name: '@shadevcom/common',
+      name: '@shardev/common',
       fileName: (format, entryName) => `${entryName}.${format}.js`,
       formats: ['es', 'cjs'],
     },
