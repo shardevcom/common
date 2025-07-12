@@ -54,7 +54,7 @@ createRoot(document.getElementById('root')!).render(
 
 ```tsx
 // WebApp.tsx
-import React, { useEffect, useMemo } from "react";
+import React, {useEffect, useMemo} from "react";
 import {useMemo} from 'react'
 import {
     useGTM,
@@ -68,28 +68,21 @@ import {
 import {AuthAbilityAdapter} from "../adapters/auth/casl-ability";
 import {DataRestAdapter} from "../adapters/data";
 import routes from "../routes";
+import {useAuthAdapter, useDataRestApi} from "./index";
 
 const baseUrl: string = import.meta.env.VITE_APP_URL
 
 const WebApp = () => {
 
     useGTM('GTM-NQJRB7H8')
-
-    const storeContext = useStoreContext();
-
-    const authUser = useAppSelector((state) => state.auth.authUser);
-
-    const adapterRestAPI = useMemo(() => new DataRestAdapter({
-        baseURL: baseUrl,
-        store: storeContext.store
-    }), [baseUrl, storeContext.store]);
-
-    const authAdapter = useMemo(() => new AuthAbilityAdapter<AuthUser>(authUser, 'api'), [authUser]);
+    
+    const adapterRestAPI = useDataRestApi();
+    const authAdapter = useAuthAdapter<AuthUser>('api')
 
     return (
         <AuthProvider adapter={authAdapter}>
             <DataProvider adapter={adapterRestAPI}>
-                <RouterProvider routes={routes} />
+                <RouterProvider routes={routes}/>
             </DataProvider>
         </AuthProvider>
     );
