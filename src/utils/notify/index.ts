@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import {faInfo} from "@fortawesome/free-solid-svg-icons";
 import {IconProp} from "@fortawesome/fontawesome-svg-core";
 

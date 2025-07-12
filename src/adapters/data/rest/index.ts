@@ -57,7 +57,7 @@ export class DataRestAdapter extends BaseDataAdapter implements DataAdapter {
 
     private setupResponseInterceptors() {
         this.client.interceptors.response.use(
-            (response) => response,
+            (response ) => response,
             (error) => {
                 // Manejo básico de errores HTTP
                 if (error.response) {
