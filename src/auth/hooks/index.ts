@@ -15,7 +15,7 @@ export const usePermissions = <T extends AuthUser = AuthUser>(): PermissionAdapt
     // Forzamos el tipo aquí, ya que sabemos que el contexto es seguro.
     return context as PermissionAdapter<T>;
 };
-export const useAuthAdapter = <T extends AuthUser = AuthUser>(
+export const useAuthAbilityAdapter = <T extends AuthUser = AuthUser>(
     guard: string = 'api'
 ): AuthAbilityAdapter<T> | null => {
     const authUser = useAppSelector((state) => state.auth.authUser);

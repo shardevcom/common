@@ -12,7 +12,7 @@ export const useData = () => {
     return context.adapter;
 };
 
-export const useDataRestApi = () => {
+export const useRestApiAdapter = () => {
     const storeContext = useStoreContext();
     const baseUrl = useBaseUrl();
 
