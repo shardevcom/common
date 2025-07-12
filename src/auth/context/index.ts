@@ -1,4 +1,4 @@
 import {createContext} from "react";
-import {PermissionAdapter} from "../types";
+import {AuthUser, PermissionAdapter} from "../types";
 
-export const AuthContext = createContext<PermissionAdapter | null>(null);
+export const AuthContext = createContext<PermissionAdapter<AuthUser> | null>(null);
