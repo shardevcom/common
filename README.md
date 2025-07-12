@@ -61,14 +61,12 @@ import {
     AuthProvider,
     DataProvider,
     AuthUser,
-    useStoreContext,
-    useAppSelector,
-    RouterProvider
+    RouterProvider,
+    useAuthAdapter, 
+    useDataRestApi
 } from "@shardev/common";
 import {AuthAbilityAdapter} from "../adapters/auth/casl-ability";
-import {DataRestAdapter} from "../adapters/data";
 import routes from "../routes";
-import {useAuthAdapter, useDataRestApi} from "./index";
 
 const baseUrl: string = import.meta.env.VITE_APP_URL
 
