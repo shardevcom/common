@@ -2,7 +2,7 @@ import {useContext, useMemo} from "react";
 import {DataContext} from "../context";
 import {useStoreContext} from "../../store";
 import {DataRestAdapter} from "../../adapters";
-import {useBaseUrl} from "../../utils/url";
+import {useBaseUrl} from "../../utils";
 
 export const useData = () => {
     const context = useContext(DataContext);
