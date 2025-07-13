@@ -1,9 +1,3 @@
-export const useBaseUrl = () => {
-    const url = import.meta.env?.VITE_APP_URL || process.env.VITE_APP_URL;
-
-    if (!url) {
-        throw new Error("VITE_APP_URL is not defined in environment variables.");
-    }
-
-    return url;
+export const useBaseUrl = ($url: string) => {
+    return import.meta.env?.VITE_APP_URL || $url;
 };
