@@ -3,6 +3,7 @@ import {DataContext} from "../context";
 import {useStoreContext} from "../../store";
 import {DataRestAdapter} from "../../adapters";
 import {useBaseUrl} from "../../utils";
+import { DataAdapterConfig } from "../types";
 
 export const useData = () => {
     const context = useContext(DataContext);
@@ -12,12 +13,13 @@ export const useData = () => {
     return context.adapter;
 };
 
-export const useRestApiAdapter = () => {
+export const useRestApiAdapter = (config?: DataAdapterConfig) => {
     const storeContext = useStoreContext();
     const baseUrl = useBaseUrl();
 
     return useMemo(() => new DataRestAdapter({
         baseURL: baseUrl,
-        store: storeContext.store
-    }), [baseUrl, storeContext.store]);
+        store: storeContext.store,
+        ...config
+    }), [baseUrl, storeContext.store, config]);
 };
