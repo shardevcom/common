@@ -1,5 +1,5 @@
-import {ReducersMapObject} from "@reduxjs/toolkit";
-import {PersistState} from "redux-persist/es/types";
+import {ReducersMapObject, Store} from "@reduxjs/toolkit";
+import {Persistor, PersistState} from "redux-persist/es/types";
 import {createStoreFactory} from "../factory";
 
 
@@ -13,6 +13,13 @@ export interface StoreConfig<Slices extends ReducersMapObject> {
     keyName: string;
     secretKey: string;
     slices: Slices;
+}
+
+export interface StoreInstance {
+    store: Store;
+    persist: Persistor;
+    addReducers: (slices: Record<string, any>) => void;
+    registeredReducers?: Record<string, any>; // opcional
 }
 
 export type StoreContextType = ReturnType<typeof createStoreFactory>;

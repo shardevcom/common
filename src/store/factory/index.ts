@@ -1,41 +1,42 @@
-import {configureStore, combineReducers, ReducersMapObject, Reducer} from '@reduxjs/toolkit';
+import { configureStore, combineReducers, ReducersMapObject, Reducer } from '@reduxjs/toolkit';
 import { persistStore, persistReducer, PersistConfig } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import { createEncryptor } from './encryptor';
-import {StateFromReducersMapObject, StoreConfig} from "../types";
+import {StateFromReducersMapObject, StoreConfig, StoreInstance} from "../types";
+import {PersistState} from "redux-persist/es/types";
 
+export function createStoreFactory<Slices extends ReducersMapObject>(config: StoreConfig<Slices>): StoreInstance {
+    const { initialState, keyName, secretKey } = config;
 
-export function createStoreFactory<Slices extends ReducersMapObject>(config: StoreConfig<Slices>) {
-    const { initialState, keyName, secretKey, slices } = config;
-
-    // Crear el rootReducer asegurando que sea del tipo correcto
-    const appReducer = combineReducers(slices) as unknown as Reducer<StateFromReducersMapObject<Slices>>;
-
-    const rootReducer = (state: StateFromReducersMapObject<Slices> | undefined, action: any) => {
-        if (action.type === 'RESET_STATE') {
-            return appReducer(undefined, action); // Reinicia el estado a undefined (o initialState si se define en los slices)
-        }
-        return appReducer(state, action);
-    };
-
+    const registeredReducers: ReducersMapObject = { ...config.slices };
 
     const encryptor = createEncryptor(secretKey);
 
-    // Configuración de persistencia
-    const persistConfig: PersistConfig<StateFromReducersMapObject<Slices>> = {
-        key: keyName,
-        storage,
-        transforms: [encryptor],
-        whitelist: Object.keys(slices), // Persistir solo los slices indicados
+    const buildReducer = () => {
+        const appReducer = combineReducers(registeredReducers) as Reducer<StateFromReducersMapObject<Slices>>& {
+            _persist: PersistState
+        };
+
+        const rootReducer = (state: StateFromReducersMapObject<Slices> | undefined, action: any) => {
+            if (action.type === 'RESET_STATE') {
+                return appReducer(undefined, action);
+            }
+            return appReducer(state, action);
+        };
+
+        const persistConfig: PersistConfig<any> = {
+            key: keyName,
+            storage,
+            transforms: [encryptor],
+            whitelist: Object.keys(registeredReducers),
+        };
+
+        return persistReducer(persistConfig, rootReducer);
     };
 
-    // Reducer persistente
-    const persistedReducer = persistReducer(persistConfig, rootReducer);
-
-    // Configuración del store con middleware mejorado
     const store = configureStore({
-        reducer: persistedReducer,
-        preloadedState: initialState as StateFromReducersMapObject<Slices>, // ✅ Asegurar que el estado inicial sea correcto
+        reducer: buildReducer(),
+        preloadedState: initialState as StateFromReducersMapObject<Slices>,
         middleware: (getDefaultMiddleware) =>
             getDefaultMiddleware({
                 serializableCheck: {
@@ -47,11 +48,27 @@ export function createStoreFactory<Slices extends ReducersMapObject>(config: Sto
 
     const persist = persistStore(store);
 
-    return { store, persist };
+    const addReducers = (newSlices: ReducersMapObject) => {
+        let hasNew = false;
+
+        for (const key in newSlices) {
+            if (!registeredReducers[key]) {
+                registeredReducers[key] = newSlices[key];
+                hasNew = true;
+            }
+        }
+
+        if (hasNew) {
+            store.replaceReducer(buildReducer());
+        }
+    };
+
+    return {
+        store,
+        persist,
+        addReducers,
+        registeredReducers, // opcional, solo para debug
+    };
 }
 
-
 export type AppDispatch = ReturnType<typeof createStoreFactory>['store']['dispatch'];
-
-
-
