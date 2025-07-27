@@ -36,16 +36,15 @@ export const appKey: string = (import.meta.env?.APP_KEY ?? 'my-secret-key');
 const storeConfig: StoreConfig<typeof rootSlices> = {
     keyName: 'my-app-name',
     secretKey: appKey,
-    slices: rootSlices
+    slices: rootSlices,
+    persist: true
 };
 
 createRoot(document.getElementById('root')!).render(
     <React.StrictMode>
-        <ThemeProvider initialTheme={theme}>
-            <StoreProvider config={storeConfig}>
-                <WebApp />
-            </StoreProvider>
-        </ThemeProvider>
+        <StoreProvider config={storeConfig}>
+            <WebApp />
+        </StoreProvider>
     </React.StrictMode>
 );
 ```
@@ -62,27 +61,31 @@ import {
     DataProvider,
     AuthUser,
     RouterProvider,
-    useAuthAdapter, 
-    useDataRestApi
+    useAuthAbilityAdapter,
+    useDataRestApi,
+    ModuleStoreProvider
 } from "@shardev/common";
 import {AuthAbilityAdapter} from "../adapters/auth/casl-ability";
 import routes from "../routes";
+import { uiSlice } from "../slices";
 
 const baseUrl: string = import.meta.env.VITE_APP_URL
 
 const WebApp = () => {
 
-    useGTM('GTM-NQJRB7H8')
-    
+    useGTM('GTM-XXXXXXX')
+
     const adapterRestAPI = useDataRestApi();
-    const authAdapter = useAuthAdapter<AuthUser>('api')
+    const authAdapter = useAuthAbilityAdapter<AuthUser>('api')
 
     return (
-        <AuthProvider adapter={authAdapter}>
-            <DataProvider adapter={adapterRestAPI}>
-                <RouterProvider routes={routes}/>
-            </DataProvider>
-        </AuthProvider>
+        <ModuleStoreProvider store={{ ui: uiSlice }}>
+            <AuthProvider adapter={authAdapter}>
+                <DataProvider adapter={adapterRestAPI}>
+                    <RouterProvider routes={routes}/>
+                </DataProvider>
+            </AuthProvider>
+        </ModuleStoreProvider>
     );
 }
 
