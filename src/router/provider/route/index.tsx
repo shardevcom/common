@@ -55,7 +55,9 @@ export const RouterProvider = ({
         });
     };
 
-    const contextValue = useMemo(() => ({routes, addRoutes}), [routes]);
+    const contextValue = useMemo(() => ({
+        routes, addRoutes, prefix
+    }), [routes, prefix]);
 
     return (
         <RouteContext.Provider value={contextValue}>
