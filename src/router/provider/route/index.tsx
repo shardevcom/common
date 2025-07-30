@@ -26,7 +26,7 @@ function applyPrefixToRoutes<T extends AuthUser>(
         return {
             ...route,
             path: prefixedPath,
-            children: route.children ? applyPrefixToRoutes(route.children, prefix) : undefined,
+            children: route.children,
         };
     });
 }
