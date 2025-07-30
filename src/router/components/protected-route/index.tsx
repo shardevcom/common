@@ -1,6 +1,7 @@
 import React from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import {PermissionAdapter, usePermissions} from "../../../auth";
+import {Redirect} from "../redirect";
 
 
 interface ProtectedRouteProps {
@@ -16,7 +17,11 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, redirectLogic
     if (redirectLogic) {
         const redirectPath = redirectLogic(permissions);
         if (redirectPath) {
-            return <Navigate to={redirectPath} state={{ from: location }} replace />;
+            return <Redirect
+                to={redirectPath}
+                state={{ from: location }}
+                replace
+            />
         }
     }
 
