@@ -3,8 +3,6 @@ import { Navigate, useLocation } from "react-router-dom";
 import {PermissionAdapter, usePermissions} from "../../../auth";
 
 
-
-
 interface ProtectedRouteProps {
     children: React.ReactNode;
     redirectLogic?: (adapter: PermissionAdapter) => string | false;

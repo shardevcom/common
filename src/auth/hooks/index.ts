@@ -1,20 +1,32 @@
 import {useContext, useMemo} from "react";
 
-import {AuthUser, PermissionAdapter} from "../types";
+import {AuthUser, Permission, PermissionAdapter, Role} from "../types";
 import {AuthContext} from "../context";
 import {AuthAbilityAdapter} from "../../adapters";
 import {useAppSelector} from "../../store";
+
+export const createMockPermissionAdapter = (): PermissionAdapter<AuthUser> => {
+    let user: AuthUser = {};
+    return {
+        can: (_action: string, _subject: any) => false,
+        update: (_roles: Role[], _permissions: Permission[]) => {},
+        getUser: () => user,
+        setUser: (authUser: AuthUser) => { user = authUser; },
+    };
+};
 
 export const usePermissions = <T extends AuthUser = AuthUser>(): PermissionAdapter<T> => {
     const context = useContext(AuthContext);
 
     if (!context) {
-        throw new Error("usePermissions must be used within a PermissionsProvider");
+        return createMockPermissionAdapter() as PermissionAdapter<T>;
     }
 
     // Forzamos el tipo aquí, ya que sabemos que el contexto es seguro.
     return context as PermissionAdapter<T>;
 };
+
+
 export const useAuthAbilityAdapter = <T extends AuthUser = AuthUser>(
     guard: string = 'api'
 ): AuthAbilityAdapter<T> | null => {
