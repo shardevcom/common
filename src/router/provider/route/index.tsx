@@ -3,18 +3,18 @@ import {
     BrowserRouter,
     useRoutes,
 } from "react-router-dom";
-import { AuthUser } from "../../../auth";
-import { RouteConfig } from "../../types";
+import {AuthUser} from "../../../auth";
+import {RouteConfig} from "../../types";
 import {RouteContext} from "../../context";
 import {parseRoutes} from "../../parser-routes";
 
 interface RouterProps<T extends AuthUser = AuthUser> {
-    children: React.ReactNode;
+    children?: React.ReactNode;
     baseRoutes?: RouteConfig<T>[]; // rutas base si las tienes
 }
 
 const InnerRouter = () => {
-    const { routes } = useContext(RouteContext)!;
+    const {routes} = useContext(RouteContext)!;
     return useRoutes(parseRoutes(routes));
 };
 
@@ -33,12 +33,12 @@ export const RouterProvider = ({
         });
     };
 
-    const contextValue = useMemo(() => ({ routes, addRoutes }), [routes]);
+    const contextValue = useMemo(() => ({routes, addRoutes}), [routes]);
 
     return (
         <RouteContext.Provider value={contextValue}>
             <BrowserRouter>
-                <InnerRouter />
+                <InnerRouter/>
                 {children}
             </BrowserRouter>
         </RouteContext.Provider>

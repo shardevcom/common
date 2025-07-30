@@ -1,23 +1,41 @@
-import { configureStore, combineReducers, ReducersMapObject, Reducer } from '@reduxjs/toolkit';
+import { configureStore, combineReducers, ReducersMapObject, Reducer, AnyAction } from '@reduxjs/toolkit';
 import { persistStore, persistReducer, PersistConfig } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import { createEncryptor } from './encryptor';
-import {StateFromReducersMapObject, StoreConfig, StoreInstance} from "../types";
-import {PersistState} from "redux-persist/es/types";
+import { StateFromReducersMapObject, StoreConfig, StoreInstance } from "../types";
+import { PersistState } from "redux-persist/es/types";
+import { authSlice } from "../slices/auth.slice"; // Asegúrate de tener esto
+
+// Reducer por defecto
+const defaultReducers: ReducersMapObject = {
+    auth: authSlice.reducer,
+};
 
 export function createStoreFactory<Slices extends ReducersMapObject>(config: StoreConfig<Slices>): StoreInstance {
     const { initialState, keyName, secretKey } = config;
 
-    const registeredReducers: ReducersMapObject = { ...config.slices };
+    // Reducers registrados inicialmente (default + personalizados)
+    const registeredReducers: ReducersMapObject = {
+        ...defaultReducers,
+        ...config.slices,
+    };
 
     const encryptor = createEncryptor(secretKey);
 
     const buildReducer = () => {
-        const appReducer = combineReducers(registeredReducers) as Reducer<StateFromReducersMapObject<Slices>>& {
-            _persist: PersistState
+        // Validar que los reducers sean funciones válidas
+        const validReducers = Object.fromEntries(
+            Object.entries(registeredReducers).filter(([_, reducer]) => typeof reducer === 'function')
+        );
+
+        const appReducer = combineReducers(validReducers) as Reducer<StateFromReducersMapObject<Slices>> & {
+            _persist: PersistState;
         };
 
-        const rootReducer = (state: StateFromReducersMapObject<Slices> | undefined, action: any) => {
+        const rootReducer = (
+            state: StateFromReducersMapObject<Slices> | undefined,
+            action: AnyAction
+        ) => {
             if (action.type === 'RESET_STATE') {
                 return appReducer(undefined, action);
             }
@@ -28,7 +46,7 @@ export function createStoreFactory<Slices extends ReducersMapObject>(config: Sto
             key: keyName,
             storage,
             transforms: [encryptor],
-            whitelist: Object.keys(registeredReducers),
+            whitelist: Object.keys(validReducers),
         };
 
         return persistReducer(persistConfig, rootReducer);
@@ -52,9 +70,12 @@ export function createStoreFactory<Slices extends ReducersMapObject>(config: Sto
         let hasNew = false;
 
         for (const key in newSlices) {
-            if (!registeredReducers[key]) {
-                registeredReducers[key] = newSlices[key];
+            const newReducer = newSlices[key];
+            if (typeof newReducer === 'function') {
+                registeredReducers[key] = newReducer;
                 hasNew = true;
+            } else {
+                console.warn(`Reducer "${key}" is invalid and was not added.`);
             }
         }
 
@@ -67,7 +88,7 @@ export function createStoreFactory<Slices extends ReducersMapObject>(config: Sto
         store,
         persist,
         addReducers,
-        registeredReducers, // opcional, solo para debug
+        registeredReducers, // opcional, útil para debug
     };
 }
 

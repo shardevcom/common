@@ -12,7 +12,7 @@ export interface StoreConfig<Slices extends ReducersMapObject> {
     initialState?: Partial<StateFromReducersMapObject<Slices>>; // ✅ Estado inicial parcial
     keyName: string;
     secretKey: string;
-    slices: Slices;
+    slices?: Slices;
 }
 
 export interface StoreInstance {
