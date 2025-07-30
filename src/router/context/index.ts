@@ -5,6 +5,7 @@ import { AuthUser } from "../../auth";
 export interface RouteContextType<T extends AuthUser = AuthUser> {
     routes: RouteConfig<T>[];
     addRoutes: (newRoutes: RouteConfig<T>[]) => void;
+    prefix?: string;
 }
 
 export const RouteContext = createContext<RouteContextType<AuthUser> | null>(null);
