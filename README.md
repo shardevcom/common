@@ -24,29 +24,30 @@ Utilidades comunes para aplicaciones hechas en **React**, diseñadas para proyec
 
 ```tsx
 // index.tsx
-import React, { Suspense } from "react";
-import { createRoot } from 'react-dom/client';
-import { rootSlices } from "./store";
-import { theme } from "./theme";
-import { StoreConfig, StoreProvider, ThemeProvider } from "@shardev/common";
-import WebApp from "./pages";
+import React from "react";
+import { createRoot } from "react-dom/client";
+import { createApp } from "@shardev/common";
+import WebPage from "./pages";
+import slices from "./store/slices";
 
-export const appKey: string = (import.meta.env?.APP_KEY ?? 'my-secret-key');
+// Creamos la app (pero no la montamos aún)
+const element = createApp({
+    name: "my-app",
+    app: WebPage,
+    slices
+});
 
-const storeConfig: StoreConfig<typeof rootSlices> = {
-    keyName: 'my-app-name',
-    secretKey: appKey,
-    slices: rootSlices,
-    persist: true
-};
+// Revisamos si existe root en el DOM
+const el = document.getElementById("root");
 
-createRoot(document.getElementById('root')!).render(
-    <React.StrictMode>
-        <StoreProvider config={storeConfig}>
-            <WebApp />
-        </StoreProvider>
-    </React.StrictMode>
-);
+if (el) {
+    createRoot(el).render(element);
+} else {
+    console.log("⚡ App registrada pero no montada (sin root)");
+}
+
+// Opcional: exportar el elemento para integraciones externas
+export default element;
 ```
 
 ---
