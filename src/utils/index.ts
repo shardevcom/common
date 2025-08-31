@@ -4,4 +4,5 @@ export * from './gtm';
 export * from './analytics';
 export * from './events';
 export * from './url';
+export * from './store';
 

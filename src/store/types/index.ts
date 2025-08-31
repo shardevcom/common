@@ -18,7 +18,7 @@ export interface StoreConfig<Slices extends ReducersMapObject> {
 export interface StoreInstance {
     store: Store;
     persist: Persistor;
-    addReducers: (slices: Record<string, any>) => void;
+    addReducers: <Slices extends ReducersMapObject>(slices: Slices) => void;
     registeredReducers?: Record<string, any>; // opcional
 }
 

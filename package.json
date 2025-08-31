@@ -1,6 +1,6 @@
 {
   "name": "@shardev/common",
-  "version": "1.1.8",
+  "version": "1.1.9",
   "author": "Elbert Tous",
   "license": "MIT",
   "type": "module",
@@ -71,6 +71,7 @@
     "@eslint/js": "^9.25.1",
     "@supabase/supabase-js": "^2.50.5",
     "@types/crypto-js": "^4.2.2",
+    "@types/nprogress": "^0.2.3",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@types/react-gtm-module": "^2.0.4",
@@ -109,6 +110,7 @@
     "@types/node": "^22.15.2",
     "crypto-js": "^4.2.0",
     "globals": "^16.0.0",
+    "nprogress": "^0.2.0",
     "react-gtm-module": "^2.0.11",
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.5.2",
