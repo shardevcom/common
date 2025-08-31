@@ -12,27 +12,27 @@ type AppOption =
     | (() => ReactNode)
     | ((params: { props?: Record<string, any> }) => ReactNode);
 
-interface SetupOptions<Slices extends ReducersMapObject> {
+interface SetupOptions<TSlices> {
     name: string;
     app: AppOption;
-    slices?: Slices;
+    slices?: ReducersMapObject<TSlices>;
     fallback?: ReactNode; // 👈 nuevo parámetro
-    initialState?: Partial<StateFromReducersMapObject<Slices>>;
+    initialState?: Partial<StateFromReducersMapObject<ReducersMapObject<TSlices>>>;
     props?: Record<string, any>;
 }
 
-export function createApp<Slices extends ReducersMapObject>({
+export function createApp<TSlices>({
                                                                 name,
                                                                 app,
                                                                 slices,
                                                                 fallback,
                                                                 initialState = {},
                                                                 props = {},
-                                                            }: SetupOptions<Slices>) {
+                                                            }: SetupOptions<TSlices>) {
     let element: ReactNode;
 
     if (slices) {
-        const storeConfig: StoreConfig<Slices> = {
+        const storeConfig: StoreConfig<ReducersMapObject<TSlices>> = {
             keyName: name,
             secretKey: appKey,
             slices,
