@@ -2,10 +2,10 @@
 import React, {ReactNode, ComponentType, Suspense} from "react";
 import {StateFromReducersMapObject, StoreConfig} from "../../store";
 import {ReducersMapObject} from "@reduxjs/toolkit";
-import {withStore} from "../../utils";
+import {getEnv, withStore} from "../../utils";
 import {Progress} from "../../utils/progress";
 
-const appKey: string = process.env.VITE_APP_KEY ?? "my-secret-key";
+const appKey: string = getEnv('VITE_APP_KEY',  "my-secret-key");
 
 type AppOption =
     | ComponentType<any>
