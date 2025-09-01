@@ -1,9 +1,7 @@
-// createApp.tsx
-import React, { ReactNode, ComponentType } from 'react';
-import { ReducersMapObject } from '@reduxjs/toolkit';
+import React, {ComponentType, ReactNode} from 'react';
+import {ReducersMapObject} from '@reduxjs/toolkit';
 import {getEnv, useSafeContext} from "../../utils";
 import {StateFromReducersMapObject, StoreConfig, StoreContext, StoreProvider} from "../../store";
-
 
 const appKey: string = getEnv('VITE_APP_KEY', 'my-secret-key');
 
@@ -26,15 +24,11 @@ export function createApp<TSlices>({
                                        slices,
                                        initialState = {},
                                        props = {}
-                                   }: SetupOptions<TSlices>) {
-
+                                   }: SetupOptions<TSlices>): React.FC {
     const Component = app as ComponentType<any>;
 
-    const Wrapper: React.FC = () => {
-        // 1️⃣ Hook siempre se llama
+    return () => { // ← Devuelve directamente la función componente
         const existing = useSafeContext(StoreContext);
-
-        // 2️⃣ Configuración del store
         const storeConfig: StoreConfig<TSlices> | undefined = slices
             ? {
                 keyName: name,
@@ -44,9 +38,7 @@ export function createApp<TSlices>({
             }
             : undefined;
 
-        // 3️⃣ Lógica condicional segura
         if (existing && slices) {
-            // estamos en store global → inyectar reducers
             if (storeConfig?.slices) {
                 existing.addReducers(storeConfig.slices as ReducersMapObject);
             }
@@ -54,7 +46,6 @@ export function createApp<TSlices>({
         }
 
         if (storeConfig) {
-            // no hay store global → envolver en provider
             return (
                 <StoreProvider config={storeConfig}>
                     <Component {...props} />
@@ -64,6 +55,4 @@ export function createApp<TSlices>({
 
         return <Component {...props} />;
     };
-
-    return <Wrapper />;
 }
