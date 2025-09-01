@@ -3,22 +3,22 @@ import {Persistor, PersistState} from "redux-persist/es/types";
 import {createStoreFactory} from "../factory";
 
 
-export type StateFromReducersMapObject<Slices extends ReducersMapObject> = {
-    [K in keyof Slices]: Slices[K] extends (...args: any) => any ? ReturnType<Slices[K]> : never;
+export type StateFromReducersMapObject<TSlices extends ReducersMapObject> = {
+    [K in keyof TSlices]: TSlices[K] extends (...args: any) => any ? ReturnType<TSlices[K]> : never;
 } & { _persist: PersistState }; // 🔥 Asegurar que _persist SIEMPRE esté presente
 
 
-export interface StoreConfig<Slices extends ReducersMapObject> {
-    initialState?: Partial<StateFromReducersMapObject<Slices>>; // ✅ Estado inicial parcial
+export interface StoreConfig<TSlices> {
+    initialState?: Partial<StateFromReducersMapObject<ReducersMapObject<TSlices>>>; // ✅ Estado inicial parcial
     keyName: string;
     secretKey: string;
-    slices?: Slices;
+    slices?: ReducersMapObject<TSlices>;
 }
 
 export interface StoreInstance {
     store: Store;
     persist: Persistor;
-    addReducers: <Slices extends ReducersMapObject>(slices: Slices) => void;
+    addReducers: <TSlices>(TSlices: ReducersMapObject<TSlices>) => void;
     registeredReducers?: Record<string, any>; // opcional
 }
 

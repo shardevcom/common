@@ -8,7 +8,7 @@ export interface RouteContextType<T extends AuthUser = AuthUser> {
     prefix?: string;
 }
 
-export const RouteContext = createContext<RouteContextType<AuthUser> | null>(null);
+export const RouteContext = createContext<RouteContextType<any> | null>(null);
 
 export const useRouteContext = () => {
     const ctx = useContext(RouteContext);

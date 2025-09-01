@@ -1,68 +1,86 @@
-import React, {useState, useMemo, useContext} from "react";
-import {
-    BrowserRouter,
-    useRoutes,
-} from "react-router-dom";
-import {AuthUser} from "../../../auth";
-import {RouteConfig} from "../../types";
-import {RouteContext} from "../../context";
-import {parseRoutes} from "../../parser-routes";
+import React, { useState, useMemo, useEffect, useRef, ReactNode } from 'react';
+import { BrowserRouter, useRoutes } from 'react-router-dom';
+import { RouteConfig } from "../../types";
+import { useSafeContext } from "../../../utils";
+import { RouteContext, RouteContextType, useRouteContext } from "../../context";
+import { AuthUser } from "../../../auth";
+import { parseRoutes } from "../../parser-routes";
 
-interface RouterProps<T extends AuthUser = AuthUser> {
-    children?: React.ReactNode;
-    baseRoutes?: RouteConfig<T>[]; // rutas base si las tienes
+interface UnifiedRouterProps<T extends AuthUser = AuthUser> {
+    routes: RouteConfig<T>[];
+    children?: ReactNode;
     prefix?: string;
 }
 
-function applyPrefixToRoutes<T extends AuthUser>(
+function applyPrefixToRoutes<T extends AuthUser = AuthUser>(
     routes: RouteConfig<T>[],
     prefix?: string
 ): RouteConfig<T>[] {
     if (!prefix) return routes;
-
-    return routes.map((route) => {
-        const prefixedPath = `${prefix}/${route.path}`.replace(/\/+/g, "/");
-
-        return {
-            ...route,
-            path: prefixedPath,
-            children: route.children,
-        };
-    });
+    return routes.map(route => ({
+        ...route,
+        path: `${prefix}/${route.path}`.replace(/\/+/g, '/'),
+        children: route.children
+    }));
 }
 
 const InnerRouter = () => {
-    const {routes} = useContext(RouteContext)!;
-    return useRoutes(parseRoutes(routes));
+    const context = useRouteContext();
+    return useRoutes(parseRoutes(context.routes));
 };
 
+export const RouterProvider = <T extends AuthUser>({
+                                                              routes: newRoutes,
+                                                              children,
+                                                              prefix
+                                                          }: UnifiedRouterProps<T>) => {
+    // Hook siempre se llama
+    const parentContext = useSafeContext<RouteContextType<T> | null>(RouteContext);
 
-export const RouterProvider = ({
-                                   children,
-                                   baseRoutes = [],
-                                   prefix
-                               }: RouterProps) => {
-    const [routes, setRoutes] = useState<RouteConfig[]>(() =>
-        applyPrefixToRoutes(baseRoutes, prefix)
+    const hasAddedRoutes = useRef(false);
+
+    const [routes, setRoutes] = useState<RouteConfig<T>[]>(() =>
+        parentContext
+            ? [] // si hay contexto padre, no necesitamos rutas locales
+            : applyPrefixToRoutes(newRoutes, prefix)
     );
 
-    const addRoutes = (newRoutes: RouteConfig[]) => {
-        const prefixedRoutes = applyPrefixToRoutes(newRoutes, prefix);
-        setRoutes((prev) => {
-            const existingPaths = new Set(prev.map((r) => r.path));
-            const uniqueNewRoutes = prefixedRoutes.filter((r) => !existingPaths.has(r.path));
-            return [...prev, ...uniqueNewRoutes];
-        });
+    const addRoutes = (routesToAdd: RouteConfig<T>[]) => {
+        const prefixedRoutes = applyPrefixToRoutes(routesToAdd, prefix);
+        if (parentContext) {
+            parentContext.addRoutes(prefixedRoutes);
+        } else {
+            setRoutes(prev => {
+                const existingPaths = new Set(prev.map(r => r.path));
+                const uniqueNewRoutes = prefixedRoutes.filter(r => !existingPaths.has(r.path));
+                return [...prev, ...uniqueNewRoutes];
+            });
+        }
     };
 
-    const contextValue = useMemo(() => ({
-        routes, addRoutes, prefix
-    }), [routes, prefix]);
+    useEffect(() => {
+        if (!hasAddedRoutes.current && newRoutes.length > 0) {
+            addRoutes(newRoutes);
+            hasAddedRoutes.current = true;
+        }
+    }, [newRoutes]);
 
+    const contextValue: RouteContextType<T> = useMemo(() => {
+        return parentContext
+            ? { routes: parentContext.routes, addRoutes, prefix }
+            : { routes, addRoutes, prefix };
+    }, [routes, parentContext, prefix]);
+
+    // Si hay un contexto padre, solo renderizamos los children
+    if (parentContext) {
+        return <>{children}</>;
+    }
+
+    // Si no hay contexto padre, creamos el RouterProvider completo
     return (
         <RouteContext.Provider value={contextValue}>
             <BrowserRouter>
-                <InnerRouter/>
+                <InnerRouter />
                 {children}
             </BrowserRouter>
         </RouteContext.Provider>
