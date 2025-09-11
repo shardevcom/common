@@ -1,6 +1,6 @@
-import {ReducersMapObject, Store} from "@reduxjs/toolkit";
+import {Middleware, ReducersMapObject, Store} from "@reduxjs/toolkit";
 import {Persistor, PersistState} from "redux-persist/es/types";
-import {createStoreFactory} from "../factory";
+import {createStoreFactory} from "@/store";
 
 
 export type StateFromReducersMapObject<TSlices extends ReducersMapObject> = {
@@ -13,6 +13,7 @@ export interface StoreConfig<TSlices> {
     keyName: string;
     secretKey: string;
     slices?: ReducersMapObject<TSlices>;
+    middlewares?: Middleware[];
 }
 
 export interface StoreInstance {

@@ -6,8 +6,8 @@ import {
     DataProviderResponse, FileType,
     QueryFilter,
     SortCondition, StorageConfig
-} from "../../../data";
-import {AuthUser} from "../../../auth";
+} from "@/data";
+import {AuthUser} from "@/auth";
 
 
 export class DataRestAdapter extends BaseDataAdapter implements DataAdapter {
@@ -15,8 +15,6 @@ export class DataRestAdapter extends BaseDataAdapter implements DataAdapter {
 
     constructor(config?: DataAdapterConfig) {
         super(config);
-
-        console.log("BaseURL en constructor:", this.baseURL);
 
         const defaultConfig: AxiosRequestConfig = {
             baseURL: this.baseURL,

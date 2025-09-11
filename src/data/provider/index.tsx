@@ -1,6 +1,6 @@
 import React from 'react';
-import {DataAdapter} from "../types";
-import {DataContext} from "../context";
+import {DataAdapter} from "@/data";
+import {DataContext} from "@/data";
 
 interface DataProviderProps {
     adapter: DataAdapter;

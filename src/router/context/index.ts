@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from "react";
 import { RouteConfig } from "../types";
-import { AuthUser } from "../../auth";
+import { AuthUser } from "@/auth";
 
 export interface RouteContextType<T extends AuthUser = AuthUser> {
     routes: RouteConfig<T>[];

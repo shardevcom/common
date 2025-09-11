@@ -17,9 +17,9 @@ import {
     FileType,
     StorageConfig,
     QueryFilter
-} from "../../../data";
-import {AuthUser, Role} from "../../../auth";
-import {buildQuery} from "../../../utils/filter";
+} from "@/data";
+import {AuthUser, Role} from "@/auth";
+import {buildQuery} from "@/utils/filter";
 
 
 export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter {
@@ -462,7 +462,6 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
     }
 
 
-
     async count?<TResponseData = number>(resource: string, filter?: QueryFilter): Promise<DataProviderResponse<TResponseData>> {
         return this.handleRequest(async (client) => {
             let query = client.from(resource).select('*', {count: 'exact', head: true});
@@ -498,16 +497,6 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
         }
     }
 
-    async createAuthUser<TResponseData extends AuthUser = AuthUser, TParams = unknown>(data: TParams): Promise<DataProviderResponse<TResponseData>> {
-        return this.handleRequest(async (client) => {
-            const {data: dataAuth, error} = await client.auth.admin.createUser(data as UserAttributes);
-            if (error) {
-                return this.createDataProviderResponse(null, error, '500', error.message || 'Failed to create auth user');
-            }
-            return this.createDataProviderResponse(dataAuth as unknown as TResponseData, undefined, '201', 'Auth user created successfully');
-        });
-    }
-
     async getCurrentAuthUser<TResponseData extends AuthUser = AuthUser>(): Promise<DataProviderResponse<TResponseData>> {
         return this.handleRequest(async (client) => {
             const {data, error} = await client.auth.getUser();
@@ -515,25 +504,6 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
                 return this.createDataProviderResponse(null, error, '500', error.message || 'Failed to get current auth user');
             }
             return this.createDataProviderResponse(data.user as unknown as TResponseData, undefined, '200', 'Current auth user retrieved successfully');
-        });
-    }
-
-    async inviteAuthUserByEmail<TResponseData, TOptions = unknown>(email: string, options?: TOptions): Promise<DataProviderResponse<TResponseData>> {
-        return this.handleRequest(async (client) => {
-            const {data, error} = await client.auth.admin.inviteUserByEmail(email, options ?? {});
-            if (error) {
-                return this.createDataProviderResponse(null, error, '500', error.message || 'Failed to invite user');
-            }
-            return this.createDataProviderResponse(data as unknown as TResponseData, undefined, '200', 'User invited successfully');
-        });
-    }
-
-    async removeAuthUser<TResponseData extends AuthUser = AuthUser, TOptions = unknown>(id: string, options?: TOptions): Promise<DataProviderResponse<TResponseData>> {
-        return this.handleRequest(async (client) => {
-            const {data, error} = await client.auth.admin.deleteUser(id);
-            if (error)
-                return this.createDataProviderResponse(null, error, '500', error.message || 'Failed to delete user');
-            return this.createDataProviderResponse(data as unknown as TResponseData, undefined, '200', 'User deleted successfully');
         });
     }
 
@@ -547,13 +517,4 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
         });
     }
 
-    async modifyAuthUser<TResponseData extends AuthUser = AuthUser, TParams = unknown>(id: string, data?: TParams): Promise<DataProviderResponse<TResponseData>> {
-        return this.handleRequest(async (client) => {
-            const {data: dataUser, error} = await client.auth.admin.updateUserById(id, data as UserAttributes);
-            if (error) {
-                return this.createDataProviderResponse(null, error, '500', error.message || 'Failed to update user');
-            }
-            return this.createDataProviderResponse(dataUser.user as unknown as TResponseData, undefined, '200', 'User updated successfully');
-        });
-    }
 }

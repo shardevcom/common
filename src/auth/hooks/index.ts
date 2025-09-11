@@ -1,9 +1,8 @@
 import {useContext, useMemo} from "react";
 
-import {AuthUser, Permission, PermissionAdapter, Role} from "../types";
-import {AuthContext} from "../context";
-import {AuthAbilityAdapter} from "../../adapters";
-import {useAppSelector} from "../../store";
+import {AuthUser, Permission, PermissionAdapter, Role, AuthContext} from "@/auth";
+import {AuthAbilityAdapter} from "@/adapters";
+import {useAppSelector} from "@/store";
 
 export const createMockPermissionAdapter = (): PermissionAdapter<AuthUser> => {
     let user: AuthUser = {};

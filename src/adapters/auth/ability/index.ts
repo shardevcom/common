@@ -1,5 +1,5 @@
 import {AbilityBuilder, PureAbility} from '@casl/ability';
-import {AuthUser, BasePermissionAdapter} from "../../../auth";
+import {AuthUser, BasePermissionAdapter} from "@/auth";
 
 
 export class AuthAbilityAdapter<T extends AuthUser> extends BasePermissionAdapter<T> {
@@ -17,11 +17,21 @@ export class AuthAbilityAdapter<T extends AuthUser> extends BasePermissionAdapte
 
         // Helper function to define permissions
         const addPermission = (permission: any) => {
-            const [action, subject] = permission.name.split('-');
-            if (action && subject) {
+            if (!permission?.name) return;
+
+            // Normalizar separadores
+            const normalized = permission.name.trim().replace(/[.\s]/g, "-");
+
+            // Dividir en partes
+            const parts = normalized.split("-").filter(Boolean);
+
+            if (parts.length >= 2) {
+                const action = parts[0];
+                const subject = parts.slice(1).join("-"); // todo lo demás es el sujeto
                 ability.can(action, subject);
             } else {
-                ability.can('view', permission.name); // Default to 'view' if no action and subject
+                // Default: si no hay separación clara, asumir "view"
+                ability.can("view", normalized);
             }
         };
 

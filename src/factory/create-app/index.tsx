@@ -1,9 +1,8 @@
 import React, {ComponentType, ReactNode} from 'react';
-import {ReducersMapObject} from '@reduxjs/toolkit';
-import {getEnv, useSafeContext} from "../../utils";
-import {StateFromReducersMapObject, StoreConfig, StoreContext, StoreProvider} from "../../store";
+import {Middleware, ReducersMapObject} from '@reduxjs/toolkit';
+import {useSafeContext} from "@/utils";
+import {StateFromReducersMapObject, StoreConfig, StoreContext, StoreProvider} from "@/store";
 
-const appKey: string = getEnv('VITE_APP_KEY', 'my-secret-key');
 
 type AppOption =
     | ComponentType<any>
@@ -13,7 +12,9 @@ type AppOption =
 interface SetupOptions<TSlices> {
     name: string;
     app: AppOption;
+    appKey?: string;
     slices?: ReducersMapObject<TSlices>;
+    middlewares?: Middleware[];
     initialState?: Partial<StateFromReducersMapObject<ReducersMapObject<TSlices>>>;
     props?: Record<string, any>;
 }
@@ -21,7 +22,9 @@ interface SetupOptions<TSlices> {
 export function createApp<TSlices>({
                                        name,
                                        app,
+                                       appKey = 'my-key-app',
                                        slices,
+                                       middlewares = [],
                                        initialState = {},
                                        props = {}
                                    }: SetupOptions<TSlices>): React.FC {
@@ -34,7 +37,8 @@ export function createApp<TSlices>({
                 keyName: name,
                 secretKey: appKey,
                 slices,
-                initialState
+                initialState,
+                middlewares
             }
             : undefined;
 

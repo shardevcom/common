@@ -1,10 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef, ReactNode } from 'react';
 import { BrowserRouter, useRoutes } from 'react-router-dom';
-import { RouteConfig } from "../../types";
-import { useSafeContext } from "../../../utils";
-import { RouteContext, RouteContextType, useRouteContext } from "../../context";
-import { AuthUser } from "../../../auth";
-import { parseRoutes } from "../../parser-routes";
+import { useSafeContext } from "@/utils";
+import { RouteContext, RouteContextType, useRouteContext, parseRoutes, RouteConfig} from "@/router";
+import { AuthUser } from "@/auth";
 
 interface UnifiedRouterProps<T extends AuthUser = AuthUser> {
     routes: RouteConfig<T>[];

@@ -1,8 +1,6 @@
 import {useContext} from "react";
 import {TypedUseSelectorHook, useDispatch, useSelector} from "react-redux";
-import {createStoreFactory} from "../factory";
-import {StoreContext} from "../context";
-import {StoreContextType} from "../types";
+import {createStoreFactory, StoreContext, StoreContextType} from "@/store";
 
 
 export const useAppDispatch = () => {

@@ -2,9 +2,8 @@ import { configureStore, combineReducers, ReducersMapObject, Reducer, AnyAction 
 import { persistStore, persistReducer, PersistConfig } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import { createEncryptor } from './encryptor';
-import { StateFromReducersMapObject, StoreConfig, StoreInstance } from "../types";
+import { StateFromReducersMapObject, StoreConfig, StoreInstance, authSlice } from "@/store";
 import { PersistState } from "redux-persist/es/types";
-import { authSlice } from "../slices/auth.slice"; // Asegúrate de tener esto
 
 // Reducer por defecto
 const defaultReducers: ReducersMapObject = {
@@ -55,13 +54,18 @@ export function createStoreFactory<Slices extends ReducersMapObject>(config: Sto
     const store = configureStore({
         reducer: buildReducer(),
         preloadedState: initialState as StateFromReducersMapObject<Slices>,
-        middleware: (getDefaultMiddleware) =>
-            getDefaultMiddleware({
+        middleware: (getDefaultMiddleware) => {
+            const baseMiddleware = getDefaultMiddleware({
                 serializableCheck: {
                     ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
                     ignoredPaths: ['_persist'],
                 },
-            }),
+            });
+
+            return config.middlewares
+                ? baseMiddleware.concat(config.middlewares)
+                : baseMiddleware;
+        },
     });
 
     const persist = persistStore(store);

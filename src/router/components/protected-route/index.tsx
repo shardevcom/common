@@ -1,7 +1,7 @@
 import React from "react";
-import { Navigate, useLocation } from "react-router-dom";
-import {PermissionAdapter, usePermissions} from "../../../auth";
-import {Redirect} from "../redirect";
+import { useLocation } from "react-router-dom";
+import {PermissionAdapter, usePermissions} from "@/auth";
+import {Redirect} from "@/router";
 
 
 interface ProtectedRouteProps {
@@ -13,12 +13,14 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, redirectLogic
     const permissions = usePermissions();
     const location = useLocation();
 
-    // Evaluar la lógica de redirección personalizada
     if (redirectLogic) {
         const redirectPath = redirectLogic(permissions);
         if (redirectPath) {
+            // Asegurar que la ruta sea absoluta
+            const absolutePath = redirectPath.startsWith("/") ? redirectPath : `/${redirectPath}`;
+
             return <Redirect
-                to={redirectPath}
+                to={absolutePath}
                 state={{ from: location }}
                 replace
             />

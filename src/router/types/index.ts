@@ -1,5 +1,5 @@
 import React from "react";
-import {AuthUser, PermissionAdapter} from "../../auth";
+import {AuthUser, PermissionAdapter} from "@/auth";
 
 export interface RouteConfig<T extends AuthUser = AuthUser> {
     redirectLogic?: (adapter: PermissionAdapter<T>) => string | false;

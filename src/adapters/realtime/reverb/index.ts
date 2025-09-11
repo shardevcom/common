@@ -6,7 +6,7 @@ import {
     RealtimeEvent,
     RealtimeFilter,
     RealtimeSubscription
-} from "../../../realtime";
+} from "@/realtime";
 
 export class RealtimeReverbAdapter extends BaseRealtimeAdapter implements RealtimeAdapter {
     protected socket?: Socket;

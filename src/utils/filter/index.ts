@@ -1,7 +1,7 @@
-import {QueryFilter, SortCondition} from "../../data";
+import {QueryFilter, SortCondition} from "@/data";
 
 
-const normalizeFilterValue = (operator: string, value: any): any => {
+export const normalizeFilterValue = (operator: string, value: any): any => {
     switch (operator) {
         case 'in':
             if (Array.isArray(value)) {
@@ -30,7 +30,7 @@ const normalizeFilterValue = (operator: string, value: any): any => {
     }
 };
 
-const buildIncludeTree = (includes: string[] | string): Record<string, any> => {
+export const buildIncludeTree = (includes: string[] | string): Record<string, any> => {
     const tree: Record<string, any> = {};
 
     (Array.isArray(includes) ? includes : [includes]).forEach((path) => {
@@ -45,7 +45,7 @@ const buildIncludeTree = (includes: string[] | string): Record<string, any> => {
     return tree;
 };
 
-const renderIncludeTree = (tree: Record<string, any>): string => {
+export const renderIncludeTree = (tree: Record<string, any>): string => {
     return Object.entries(tree)
         .map(([key, subtree]) => {
             const nested = renderIncludeTree(subtree);
@@ -55,7 +55,7 @@ const renderIncludeTree = (tree: Record<string, any>): string => {
 };
 
 // 🧠 Función recursiva para aplicar filtros incluyendo OR/AND
-const applyFilters = (query: any, filters: QueryFilter): any => {
+export const applyFilters = (query: any, filters: QueryFilter): any => {
     if ('AND' in filters) {
         filters?.AND?.forEach((subfilter) => {
             query = applyFilters(query, subfilter);

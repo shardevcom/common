@@ -1,5 +1,5 @@
 import {Store, UnknownAction} from "redux";
-import {AuthUser} from "../../auth";
+import {AuthUser} from "@/auth";
 import {Reducer} from "@reduxjs/toolkit";
 
 export interface PaginatedData<T> {
@@ -44,7 +44,7 @@ export interface StorageConfig {
 
 export interface DataAdapterConfig {
     token?: string
-    baseURL?: string;
+    baseURL: string;
     store?: Store;
     reducers?: Record<string, Reducer<any, UnknownAction>>;
     options?: Record<string, any>;
