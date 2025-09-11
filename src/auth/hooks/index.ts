@@ -32,11 +32,6 @@ export const useAuthAbilityAdapter = <T extends AuthUser = AuthUser>(
     const authUser = useAppSelector((state) => state.auth.authUser);
 
     return useMemo(() => {
-        if (!authUser) {
-            console.warn('AuthAdapter: authUser is null or undefined.');
-            return null;
-        }
-
         return new AuthAbilityAdapter<T>(authUser as T, guard);
     }, [authUser, guard]);
 };
