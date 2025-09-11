@@ -116,9 +116,9 @@ export interface DataAdapter {
     count?<TResponseData = number>(resource: string, filter?: QueryFilter): Promise<DataProviderResponse<TResponseData>>;
     subscribe?<TResponseData>(resource: string, callback: (data: TResponseData) => void): void;
     unsubscribe?(resource: string): void;
-    signIn?<TResponseData extends AuthUser = AuthUser, TParams = unknown>(uri?: string, credentials: TParams): Promise<DataProviderResponse<TResponseData>>;
+    signIn?<TResponseData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams, uri?: string, ): Promise<DataProviderResponse<TResponseData>>;
     signInWithOAuth?<TResponseData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TResponseData>>;
-    signUp?<TResponseData extends AuthUser = AuthUser, TParams = unknown>(uri?: string, credentials: TParams): Promise<DataProviderResponse<TResponseData>>;
+    signUp?<TResponseData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams, uri?: string,): Promise<DataProviderResponse<TResponseData>>;
     setCurrentAuthUser?<TResponseData extends AuthUser = AuthUser, TParams = unknown>(data: TParams): Promise<DataProviderResponse<TResponseData>>;
     getCurrentAuthUser?<TResponseData extends AuthUser = AuthUser>(): Promise<DataProviderResponse<TResponseData>>;
     createAuthUser?<TResponseData extends AuthUser = AuthUser, TParams = unknown>(data: TParams): Promise<DataProviderResponse<TResponseData>>;

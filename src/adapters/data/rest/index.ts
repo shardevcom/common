@@ -299,7 +299,7 @@ export class DataRestAdapter extends BaseDataAdapter implements DataAdapter {
     }
 
 
-    async signIn<TResponseData extends AuthUser = AuthUser, TParams = unknown>(uri?: string, credentials: TParams): Promise<DataProviderResponse<TResponseData>> {
+    async signIn<TResponseData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams, uri?: string): Promise<DataProviderResponse<TResponseData>> {
         try {
             // Asumiendo un endpoint POST para iniciar sesión
             const response = await this.client.post<DataProviderResponse<TResponseData>>(uri ?? '/auth/signin', credentials);
@@ -310,7 +310,7 @@ export class DataRestAdapter extends BaseDataAdapter implements DataAdapter {
         }
     }
 
-    async signUp<TResponseData extends AuthUser = AuthUser, TParams = unknown>(uri?: string, credentials: TParams): Promise<DataProviderResponse<TResponseData>> {
+    async signUp<TResponseData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams, uri?: string): Promise<DataProviderResponse<TResponseData>> {
         try {
             // Asumiendo un endpoint POST para registrarse
             const response = await this.client.post<DataProviderResponse<TResponseData>>(uri ?? '/auth/signup', credentials);
