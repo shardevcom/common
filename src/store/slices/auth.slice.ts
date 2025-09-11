@@ -1,7 +1,7 @@
 import {createSlice, PayloadAction} from '@reduxjs/toolkit';
 import {AuthUser} from "@/auth";
 
-interface AuthState {
+export interface AuthState {
     authUser: AuthUser
 }
 
@@ -38,4 +38,4 @@ export const authSlice = createSlice({
 });
 
 export const { initAuth, setAuth} = authSlice.actions
-export default authSlice.reducer;
+export const authReducer = authSlice.reducer;

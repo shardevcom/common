@@ -2,12 +2,16 @@ import { configureStore, combineReducers, ReducersMapObject, Reducer, UnknownAct
 import { persistStore, persistReducer, PersistConfig } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import { createEncryptor } from './encryptor';
-import { StateFromReducersMapObject, StoreConfig, StoreInstance, authSlice } from "@/store";
+import {StateFromReducersMapObject, StoreConfig, StoreInstance, AuthState, authReducer} from "@/store";
 import { PersistState } from "redux-persist/es/types";
 
-// Reducer por defecto
-const defaultReducers: ReducersMapObject = {
-    auth: authSlice.reducer,
+
+export interface RootState {
+    auth: AuthState;
+}
+
+export const defaultSlices: ReducersMapObject<RootState> = {
+    auth: authReducer
 };
 
 export type CombinedState<Slices extends ReducersMapObject> =
