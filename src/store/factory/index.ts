@@ -15,7 +15,7 @@ export const defaultSlices: ReducersMapObject<RootState> = {
 };
 
 export type CombinedState<Slices extends ReducersMapObject> =
-    StateFromReducersMapObject<typeof defaultSlices> &
+    StateFromReducersMapObject<ReducersMapObject<RootState>> &
     StateFromReducersMapObject<Slices>;
 
 export function createStoreFactory<Slices extends ReducersMapObject>(config: StoreConfig<Slices>): StoreInstance {
