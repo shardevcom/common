@@ -299,10 +299,10 @@ export class DataRestAdapter extends BaseDataAdapter implements DataAdapter {
     }
 
 
-    async signIn<TResponseData extends AuthUser = AuthUser, TParams = unknown>(uri?: string = '/auth/signin', credentials: TParams): Promise<DataProviderResponse<TResponseData>> {
+    async signIn<TResponseData extends AuthUser = AuthUser, TParams = unknown>(uri?: string, credentials: TParams): Promise<DataProviderResponse<TResponseData>> {
         try {
             // Asumiendo un endpoint POST para iniciar sesión
-            const response = await this.client.post<DataProviderResponse<TResponseData>>(uri, credentials);
+            const response = await this.client.post<DataProviderResponse<TResponseData>>(uri ?? '/auth/signin', credentials);
             // Si la respuesta contiene el usuario y el token, puedes opcionalmente guardarlos en el store aquí
             return response.data;
         } catch (error: any) {
@@ -310,10 +310,10 @@ export class DataRestAdapter extends BaseDataAdapter implements DataAdapter {
         }
     }
 
-    async signUp<TResponseData extends AuthUser = AuthUser, TParams = unknown>(uri?: string = '/auth/signup', credentials: TParams): Promise<DataProviderResponse<TResponseData>> {
+    async signUp<TResponseData extends AuthUser = AuthUser, TParams = unknown>(uri?: string, credentials: TParams): Promise<DataProviderResponse<TResponseData>> {
         try {
             // Asumiendo un endpoint POST para registrarse
-            const response = await this.client.post<DataProviderResponse<TResponseData>>(uri, credentials);
+            const response = await this.client.post<DataProviderResponse<TResponseData>>(uri ?? '/auth/signup', credentials);
             // Si la respuesta contiene el usuario y el token, puedes opcionalmente guardarlos en el store aquí
             return response.data;
         } catch (error: any) {
@@ -321,10 +321,10 @@ export class DataRestAdapter extends BaseDataAdapter implements DataAdapter {
         }
     }
 
-    async signOut(uri?: string = '/auth/signout'): Promise<DataProviderResponse> {
+    async signOut(uri?: string): Promise<DataProviderResponse> {
         try {
             // Asumiendo un endpoint POST o GET para cerrar sesión. POST es común para invalidar el token en el backend.
-            const response = await this.client.post<DataProviderResponse>(uri); // O `/auth/logout`
+            const response = await this.client.post<DataProviderResponse>(uri ?? '/auth/signout'); // O `/auth/logout`
             // Disparar una acción Redux para limpiar el estado de autenticación en el store
             this.store?.dispatch({ type: 'RESET_STATE' });// Asegúrate de que esta acción exista
             return response.data;
