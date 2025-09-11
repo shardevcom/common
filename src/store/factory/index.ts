@@ -5,14 +5,9 @@ import { createEncryptor } from './encryptor';
 import {StateFromReducersMapObject, StoreConfig, StoreInstance, authReducer} from "@/store";
 import { PersistState } from "redux-persist/es/types";
 
-
-export interface RootState {
-    auth: AuthState;
-}
-
-export const defaultSlices: ReducersMapObject<RootState> = {
+export const defaultSlices: ReducersMapObject = {
     auth: authReducer,
-}
+};
 
 export function createStoreFactory<Slices extends ReducersMapObject>(config: StoreConfig<Slices>): StoreInstance {
     const { initialState, keyName, secretKey } = config;
