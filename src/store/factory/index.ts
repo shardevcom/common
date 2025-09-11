@@ -1,4 +1,4 @@
-import { configureStore, combineReducers, ReducersMapObject, Reducer, AnyAction } from '@reduxjs/toolkit';
+import { configureStore, combineReducers, ReducersMapObject, Reducer } from '@reduxjs/toolkit';
 import { persistStore, persistReducer, PersistConfig } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import { createEncryptor } from './encryptor';
@@ -9,6 +9,10 @@ import { PersistState } from "redux-persist/es/types";
 const defaultReducers: ReducersMapObject = {
     auth: authSlice.reducer,
 };
+
+export type CombinedState<Slices extends ReducersMapObject> =
+    StateFromReducersMapObject<typeof defaultReducers> &
+    StateFromReducersMapObject<Slices>;
 
 export function createStoreFactory<Slices extends ReducersMapObject>(config: StoreConfig<Slices>): StoreInstance {
     const { initialState, keyName, secretKey } = config;
@@ -27,13 +31,13 @@ export function createStoreFactory<Slices extends ReducersMapObject>(config: Sto
             Object.entries(registeredReducers).filter(([_, reducer]) => typeof reducer === 'function')
         );
 
-        const appReducer = combineReducers(validReducers) as Reducer<StateFromReducersMapObject<Slices>> & {
+        const appReducer = combineReducers(validReducers) as Reducer<CombinedState<Slices>> & {
             _persist: PersistState;
         };
 
         const rootReducer = (
-            state: StateFromReducersMapObject<Slices> | undefined,
-            action: AnyAction
+            state: CombinedState<Slices> | undefined,
+            action: UnknownAction
         ) => {
             if (action.type === 'RESET_STATE') {
                 return appReducer(undefined, action);
