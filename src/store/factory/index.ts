@@ -1,4 +1,4 @@
-import { configureStore, combineReducers, ReducersMapObject, Reducer } from '@reduxjs/toolkit';
+import { configureStore, combineReducers, ReducersMapObject, Reducer, UnknownAction } from '@reduxjs/toolkit';
 import { persistStore, persistReducer, PersistConfig } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import { createEncryptor } from './encryptor';
