@@ -1,12 +1,10 @@
 import React from "react";
-import { useLocation } from "react-router-dom";
-import {PermissionAdapter, usePermissions} from "@/auth";
-import {Redirect} from "@/router";
-
+import {Navigate, useLocation} from "react-router-dom";
+import { PermissionAdapter, usePermissions } from "@/auth";
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
-    redirectLogic?: (adapter: PermissionAdapter) => string | false;
+    redirectLogic?: (adapter: PermissionAdapter) => string | React.ReactNode | false;
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, redirectLogic }) => {
@@ -14,20 +12,32 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, redirectLogic
     const location = useLocation();
 
     if (redirectLogic) {
-        const redirectPath = redirectLogic(permissions);
-        if (redirectPath) {
-            // Asegurar que la ruta sea absoluta
-            const absolutePath = redirectPath.startsWith("/") ? redirectPath : `/${redirectPath}`;
+        const redirectResult = redirectLogic(permissions);
 
-            return <Redirect
-                to={absolutePath}
-                state={{ from: location }}
-                replace
-            />
+        if (redirectResult) {
+            // Caso 1: Si devuelve un string -> tratamos como ruta
+            if (typeof redirectResult === "string") {
+                const absolutePath = redirectResult.startsWith("/")
+                    ? redirectResult
+                    : `/${redirectResult}`;
+
+                return (
+                    <Navigate
+                        to={absolutePath}
+                        state={{ from: location }}
+                        replace
+                    />
+                );
+            }
+
+            // Caso 2: Si devuelve un componente React
+            if (React.isValidElement(redirectResult)) {
+                return redirectResult;
+            }
         }
     }
 
-    return children;
+    return <>{children}</>;
 };
 
 export default ProtectedRoute;
