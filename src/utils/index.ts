@@ -1,4 +1,3 @@
-export * from './notify';
 export * from './location';
 export * from './gtm';
 export * from './analytics';

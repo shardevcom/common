@@ -20,14 +20,14 @@ export class AuthAbilityAdapter<T extends AuthUser> extends BasePermissionAdapte
             if (!permission?.name) return;
 
             // Normalizar separadores
-            const normalized = permission.name.trim().replace(/[.\s]/g, "-");
+            const normalized = permission.name.trim().replace(/[.\s-]/, ':')  // Convertir ., espacio y - a :
 
             // Dividir en partes
-            const parts = normalized.split("-").filter(Boolean);
+            const parts = normalized.split(":").filter(Boolean);
 
             if (parts.length >= 2) {
                 const action = parts[0];
-                const subject = parts.slice(1).join("-"); // todo lo demás es el sujeto
+                const subject = parts.slice(1).join(":"); // todo lo demás es el sujeto
                 ability.can(action, subject);
             } else {
                 // Default: si no hay separación clara, asumir "view"
@@ -68,6 +68,13 @@ export class AuthAbilityAdapter<T extends AuthUser> extends BasePermissionAdapte
 
     public can(action: string, subject: any): boolean {
         return this.ability.can(action, subject);
+    }
+
+    public abilities() {
+        return this.ability.rules.map(rule => ({
+            action: rule.action,
+            subject: rule.subject
+        }));
     }
 
     public update(rules: any) {

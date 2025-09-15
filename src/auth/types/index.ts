@@ -27,9 +27,17 @@ export interface AuthUser {
     expires_at?: string
 }
 
+export interface Rules {
+    action: string | string[],
+    subject: string | string[]
+}
+
 export interface PermissionAdapter <T extends AuthUser = AuthUser>{
     can(action: string, subject: any): boolean;
+    canAny(actions: string[], subject: any): boolean
+    canAll(actions: string[], subject: any): boolean
     update(roles: Role[], permissions: Permission[]): void;
+    abilities(): Array<Rules>;
     getUser(): T;
     setUser(authUser: T): void;
 }
@@ -41,7 +49,14 @@ export abstract class BasePermissionAdapter<T extends AuthUser> implements Permi
         this.guard = guard;
     }
     abstract can(action: string, subject: any): boolean;
+    public canAny(actions: string[], subject: any): boolean {
+        return actions.some(action => this.can(action, subject));
+    }
+    public canAll(actions: string[], subject: any): boolean {
+        return actions.every(action => this.can(action, subject));
+    }
     abstract update(roles: Role[], permissions: Permission[]): void;
+    abstract abilities(): Array<Rules>;
     getUser(): T {
         return this.authUser;
     }
