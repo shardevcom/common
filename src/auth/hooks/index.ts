@@ -1,6 +1,6 @@
 import {useContext, useMemo} from "react";
 
-import {AuthUser, Permission, PermissionAdapter, Role, AuthContext} from "@/auth";
+import {AuthUser, Permission, PermissionAdapter, Role, AuthContext, Rules} from "@/auth";
 import {AuthAbilityAdapter} from "@/adapters";
 import {useAppSelector} from "@/store";
 
@@ -8,9 +8,21 @@ export const createMockPermissionAdapter = (): PermissionAdapter<AuthUser> => {
     let user: AuthUser = {};
     return {
         can: (_action: string, _subject: any) => false,
-        update: (_roles: Role[], _permissions: Permission[]) => {},
+        update: (_roles: Role[], _permissions: Permission[]) => {
+        },
         getUser: () => user,
-        setUser: (authUser: AuthUser) => { user = authUser; },
+        setUser: (authUser: AuthUser) => {
+            user = authUser;
+        },
+        canAny: function (actions: string[], subject: any): boolean {
+            throw new Error("Function not implemented.");
+        },
+        canAll: function (actions: string[], subject: any): boolean {
+            throw new Error("Function not implemented.");
+        },
+        abilities: function (): Array<Rules> {
+            throw new Error("Function not implemented.");
+        },
     };
 };
 

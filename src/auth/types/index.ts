@@ -34,10 +34,10 @@ export interface Rules {
 
 export interface PermissionAdapter <T extends AuthUser = AuthUser>{
     can(action: string, subject: any): boolean;
-    canAny(actions: string[], subject: any): boolean
-    canAll(actions: string[], subject: any): boolean
+    canAny?(actions: string[], subject: any): boolean
+    canAll?(actions: string[], subject: any): boolean
     update(roles: Role[], permissions: Permission[]): void;
-    abilities(): Array<Rules>;
+    abilities?(): Array<Rules>;
     getUser(): T;
     setUser(authUser: T): void;
 }
