@@ -4,12 +4,12 @@ import {useSafeContext} from "@/utils";
 import {StateFromReducersMapObject, StoreConfig, StoreContext, StoreProvider} from "@/store";
 
 
-type AppOption =
+export type AppOption =
     | ComponentType<any>
     | (() => ReactNode)
     | ((params: { props?: Record<string, any> }) => ReactNode);
 
-interface SetupOptions<TSlices> {
+export interface SetupOptions<TSlices> {
     name: string;
     app: AppOption;
     appKey?: string;

@@ -70,16 +70,8 @@ export class AuthAbilityAdapter<T extends AuthUser> extends BasePermissionAdapte
         return this.ability.can(action, subject);
     }
 
-    public abilities() {
-        return this.ability.rules.map(rule => ({
-            action: rule.action,
-            subject: rule.subject
-        }));
-    }
-
     public update(rules: any) {
         this.ability.update(rules)
     }
-
 
 }

@@ -37,9 +37,9 @@ export interface PermissionAdapter <T extends AuthUser = AuthUser>{
     canAny?(actions: string[], subject: any): boolean
     canAll?(actions: string[], subject: any): boolean
     update(roles: Role[], permissions: Permission[]): void;
-    abilities?(): Array<Rules>;
     getUser(): T;
     setUser(authUser: T): void;
+    isAuthenticated(): boolean;
 }
 
 
@@ -49,14 +49,17 @@ export abstract class BasePermissionAdapter<T extends AuthUser> implements Permi
         this.guard = guard;
     }
     abstract can(action: string, subject: any): boolean;
-    public canAny(actions: string[], subject: any): boolean {
-        return actions.some(action => this.can(action, subject));
+    canAny(actions: string | string[], subject: any): boolean {
+        const arr = this.normalizeActions(actions);
+        return arr.some(action => this.can(action, subject));
     }
-    public canAll(actions: string[], subject: any): boolean {
-        return actions.every(action => this.can(action, subject));
+    canAll(actions: string | string[], subject: any): boolean {
+        const arr = this.normalizeActions(actions);
+        return arr.every(action => this.can(action, subject));
     }
+
     abstract update(roles: Role[], permissions: Permission[]): void;
-    abstract abilities(): Array<Rules>;
+
     getUser(): T {
         return this.authUser;
     }
@@ -64,6 +67,16 @@ export abstract class BasePermissionAdapter<T extends AuthUser> implements Permi
     setUser(authUser: T): void {
         this.authUser = authUser
     }
+
+    isAuthenticated(): boolean {
+        return !!this.authUser?.access_token && !!this.authUser?.id;
+    }
+
+    private normalizeActions(actions: string | string[]): string[] {
+        if (Array.isArray(actions)) return actions;
+        return [actions];
+    }
+
 }
 
 
