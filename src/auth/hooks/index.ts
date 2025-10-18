@@ -14,15 +14,7 @@ export const createMockPermissionAdapter = (): PermissionAdapter<AuthUser> => {
         setUser: (authUser: AuthUser) => {
             user = authUser;
         },
-        canAny: function (actions: string[], subject: any): boolean {
-            throw new Error("Function not implemented.");
-        },
-        canAll: function (actions: string[], subject: any): boolean {
-            throw new Error("Function not implemented.");
-        },
-        abilities: function (): Array<Rules> {
-            throw new Error("Function not implemented.");
-        },
+        isAuthenticated: () =>  !!user?.access_token && !!user?.id,
     };
 };
 

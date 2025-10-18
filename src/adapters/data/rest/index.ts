@@ -114,6 +114,7 @@ export class DataRestAdapter extends BaseDataAdapter implements DataAdapter {
     async fetch<TResponseData>(resource: string, params?: {
         sort?: SortCondition | SortCondition[];
         filter?: QueryFilter;
+        search?: string;
         fields?: string | string[];
         include?: string | string[];
     }): Promise<DataProviderResponse<TResponseData>> {
@@ -167,9 +168,12 @@ export class DataRestAdapter extends BaseDataAdapter implements DataAdapter {
         }
     }
 
-    async fetchById<TResponseData>(resource: string, id: string | number): Promise<DataProviderResponse<TResponseData>> {
+    async fetchById<TResponseData>(resource: string, id: string | number, params?: {
+        fields?: string | string[];
+        include?: string | string[];
+    }): Promise<DataProviderResponse<TResponseData>> {
         try {
-            const response = await this.client.get<DataProviderResponse<TResponseData>>(`/${resource}/${id}`);
+            const response = await this.client.get<DataProviderResponse<TResponseData>>(`/${resource}/${id}`, { params });
             return response.data;
         } catch (error: any) {
             return Promise.reject(error);
@@ -247,6 +251,7 @@ export class DataRestAdapter extends BaseDataAdapter implements DataAdapter {
         };
         sort?: SortCondition | SortCondition[];
         filter?: QueryFilter;
+        search?: string;
         fields?: string | string[];
         include?: string | string[];
     }): Promise<DataProviderResponse<TResponseData>> {

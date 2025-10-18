@@ -12,11 +12,11 @@ export const StoreProvider = <Slices extends Record<string, any>>({
                                                                       config,
                                                                       children,
                                                                   }: StoreProviderProps<Slices>) => {
-    const storedVersion = localStorage.getItem("version");
+    const storedVersion = localStorage.getItem(`version${config.keyName}`);
 
-    if (storedVersion !== config.keyName) {
+    if (storedVersion !== config.secretKey) {
         localStorage.clear();
-        localStorage.setItem("version", config.keyName);
+        localStorage.setItem(`version${config.keyName}`, config.secretKey);
     }
 
     const storeInstance = createStoreFactory(config);

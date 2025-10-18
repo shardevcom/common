@@ -24,15 +24,43 @@ export interface PaginationLink {
     active: boolean;
 }
 
-
-export interface DataProviderResponse<T = any> {
-    success: boolean,
-    message: string,
-    errors: Record<string, any> | unknown,
-    data: T | null,
-    status: 'success' | 'error' | 'pending' | string
+export interface DataProviderResponse<T = any, E = Record<string, unknown>> {
+    success: boolean;
+    message: string;
+    errors?: E; // 👈 Flexible y opcional
+    data: T | null;
+    status: 'success' | 'error' | 'pending' | string;
     originalError?: unknown;
 }
+
+export function ProcessApiResponse<T, E = Record<string, unknown>>(
+    response: DataProviderResponse<T, E> | unknown
+): DataProviderResponse<T, E> {
+    if (response && typeof response === 'object' && 'success' in response) {
+        return response as DataProviderResponse<T, E>;
+    }
+
+    let message = 'Ocurrió un error';
+    let errors: E | undefined;
+
+    if (response instanceof Error) {
+        message = response.message;
+    } else if (typeof response === 'string') {
+        message = response;
+    } else if (typeof response === 'object' && response !== null) {
+        errors = response as E;
+    }
+
+    return {
+        success: false,
+        data: null,
+        message,
+        errors,
+        status: 'error',
+        originalError: response
+    };
+}
+
 
 export interface StorageConfig {
     disk?: string;
@@ -87,6 +115,7 @@ export interface DataAdapter {
     fetch<TResponseData>(resource: string, params?: {
         sort?: SortCondition | SortCondition[];
         filter?: QueryFilter;
+        search?: string;
         fields?: string | string[];
         include?: string | string[];
     }): Promise<DataProviderResponse<TResponseData>>;
@@ -95,7 +124,10 @@ export interface DataAdapter {
         metadata?: Record<string, any>;
         storage?: StorageConfig;
     }): Promise<DataProviderResponse<TResponseData>>;
-    fetchById<TResponseData>(resource: string, id: string | number): Promise<DataProviderResponse<TResponseData>>;
+    fetchById<TResponseData>(resource: string, id: string | number, params?: {
+        fields?: string | string[];
+        include?: string | string[];
+    }): Promise<DataProviderResponse<TResponseData>>;
     insert<TResponseData, TParams = TResponseData>(resource: string, data: Partial<TParams>): Promise<DataProviderResponse<TResponseData>>;
     modify<TResponseData, TParams = TResponseData>(resource: string, params: { id?: string | number; filter?: QueryFilter; }, data: Partial<TParams>): Promise<DataProviderResponse<TResponseData>>;
     upsert<TResponseData, TParams = TResponseData>(resource: string, data: Partial<TParams>, uniqueFields?: [string, ...string[]]): Promise<DataProviderResponse<TResponseData>>
@@ -103,6 +135,7 @@ export interface DataAdapter {
     fetchMany<TResponseData>(resource: string, params?: {
         pagination?: { page: number; perPage: number };
         sort?: SortCondition | SortCondition[];
+        search?: string;
         filter?: QueryFilter;
         fields?: string | string[];
         include?: string | string[];
@@ -110,6 +143,7 @@ export interface DataAdapter {
     fetchOne<TResponseData>(resource: string, params?: {
         sort?: SortCondition | SortCondition[];
         filter?: QueryFilter;
+        search?: string;
         fields?: string | string[];
         include?: string | string[];
     }): Promise<DataProviderResponse<TResponseData>>;
