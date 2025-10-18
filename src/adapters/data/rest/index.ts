@@ -88,7 +88,7 @@ export class DataRestAdapter extends BaseDataAdapter implements DataAdapter {
                     const errorResponse: DataProviderResponse<any> = {
                         success: false,
                         message: 'No response received from server.',
-                        errors: null,
+                        errors: undefined,
                         data: null,
                         status: 'error',
                         originalError: error,
@@ -100,7 +100,7 @@ export class DataRestAdapter extends BaseDataAdapter implements DataAdapter {
                     const errorResponse: DataProviderResponse<any> = {
                         success: false,
                         message: `Request setup error: ${error.message}`,
-                        errors: null,
+                        errors: undefined,
                         data: null,
                         status: 'error',
                         originalError: error,
@@ -281,6 +281,67 @@ export class DataRestAdapter extends BaseDataAdapter implements DataAdapter {
             //    response.data.data = response.data.data[0] || null;
             // }
 
+            return response.data;
+        } catch (error: any) {
+            return Promise.reject(error);
+        }
+    }
+
+    /**
+     * 📤 Subir un archivo para importación masiva
+     */
+    async uploadFile<TResponseData>(resource: string, formData: FormData): Promise<DataProviderResponse<TResponseData>> {
+        try {
+            const response = await this.client.post<DataProviderResponse<TResponseData>>(
+                `/${resource}/import`,
+                formData,
+                {
+                    headers: { "Content-Type": "multipart/form-data" },
+                }
+            );
+            return response.data;
+        } catch (error: any) {
+            return Promise.reject(error);
+        }
+    }
+
+    async downloadFile(resource: string, params?: Record<string, any>): Promise<Blob> {
+        try {
+            const response = await this.client.get(`/${resource}/export`, {
+                params,
+                responseType: "blob", // Para manejar binarios correctamente
+            });
+            return response.data;
+        } catch (error: any) {
+            console.error("Error al descargar archivo:", error);
+            throw error;
+        }
+    }
+
+    async modifyMany<TResponseData, TParams = TResponseData>(
+        resource: string,
+        data: Partial<TParams>[]
+    ): Promise<DataProviderResponse<TResponseData>> {
+        try {
+            const response = await this.client.patch<DataProviderResponse<TResponseData>>(
+                `/${resource}/bulk-update`,
+                { items: data }
+            );
+            return response.data;
+        } catch (error: any) {
+            return Promise.reject(error);
+        }
+    }
+
+    async removeMany<TResponseData>(
+        resource: string,
+        params: { ids: Array<string | number> }
+    ): Promise<DataProviderResponse<TResponseData>> {
+        try {
+            const response = await this.client.delete<DataProviderResponse<TResponseData>>(
+                `/${resource}/bulk-delete`,
+                { data: params } // DELETE no suele aceptar body, pero axios sí lo permite
+            );
             return response.data;
         } catch (error: any) {
             return Promise.reject(error);

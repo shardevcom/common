@@ -147,6 +147,12 @@ export interface DataAdapter {
         fields?: string | string[];
         include?: string | string[];
     }): Promise<DataProviderResponse<TResponseData>>;
+
+    uploadFile?<TResponseData>(resource: string, formData: FormData): Promise<DataProviderResponse<TResponseData>>;
+    downloadFile?(resource: string, params?: Record<string, any>): Promise<Blob>;
+    removeMany?<TResponseData>(resource: string, params: { ids: Array<string | number> }): Promise<DataProviderResponse<TResponseData>>;
+    modifyMany?<TResponseData, TParams = TResponseData>(resource: string, data: Partial<TParams>[]): Promise<DataProviderResponse<TResponseData>>;
+
     count?<TResponseData = number>(resource: string, filter?: QueryFilter): Promise<DataProviderResponse<TResponseData>>;
     subscribe?<TResponseData>(resource: string, callback: (data: TResponseData) => void): void;
     unsubscribe?(resource: string): void;
