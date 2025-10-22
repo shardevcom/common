@@ -2,7 +2,8 @@ import { useCallback, useEffect, useState } from "react";
 import {
     DataAdapter,
     DataProviderResponse,
-    PaginatedData, ProcessApiResponse,
+    PaginatedData,
+    ProcessApiResponse,
     QueryFilter,
     SortCondition,
 } from "@/data";
@@ -25,7 +26,7 @@ export interface EntityServiceState<T, E = Record<string, unknown>> {
     error?: E | null;
 }
 
-export function useEntityService<
+export function useResourceService<
     T extends { id?: string | number } = any,
     E = Record<string, unknown>
 >(
@@ -34,6 +35,7 @@ export function useEntityService<
         perPage?: number;
         include?: string | string[];
         sort?: SortCondition | SortCondition[];
+        filter?: QueryFilter;
         autoFetch?: boolean;
     }
 ) {
@@ -46,7 +48,7 @@ export function useEntityService<
             perPage: options?.perPage ?? 10,
             total: 0,
         },
-        filter: {},
+        filter: options?.filter ?? {},
         sort: options?.sort,
         include: options?.include,
         search: "",
@@ -54,7 +56,21 @@ export function useEntityService<
         error: null,
     });
 
-    /** Ejecutar cualquier método del adapter */
+    /** Utilidad interna para manejar errores y estados */
+    const handleResponse = useCallback(
+        <R>(response: any): DataProviderResponse<R> & { errors?: E } => {
+            const processed = ProcessApiResponse<R>(response) as DataProviderResponse<R> & { errors?: E };
+            setState((prev) => ({
+                ...prev,
+                isLoading: false,
+                error: processed.success ? null : processed.errors ?? null,
+            }));
+            return processed;
+        },
+        []
+    );
+
+    /** Ejecutar método genérico */
     const execute = useCallback(
         async <K extends keyof DataAdapter>(
             method: K,
@@ -64,30 +80,18 @@ export function useEntityService<
             if (typeof fn !== "function") {
                 throw new Error(`El método ${String(method)} no está disponible en el adapter`);
             }
-
-            setState((prev) => ({ ...prev, isLoading: true, error: null }));
-
+            setState((prev) => ({ ...prev, isLoading: true }));
             try {
                 const response = await (fn as any)(resource, ...args);
-                const processed = ProcessApiResponse<any>(response) as DataProviderResponse<any> & { errors?: E };
-
-                setState((prev) => ({
-                    ...prev,
-                    isLoading: false,
-                    error: processed.success ? null : processed.errors,
-                }));
-
-                return processed;
-            } catch (error) {
-                const processed = ProcessApiResponse(error) as DataProviderResponse<any> & { errors?: E };
-                setState((prev) => ({ ...prev, isLoading: false, error: processed.errors }));
-                return processed;
+                return handleResponse<any>(response);
+            } catch (err) {
+                return handleResponse<any>(err);
             }
         },
-        [adapter, resource]
+        [adapter, resource, handleResponse]
     );
 
-    /** Fetch paginado */
+    /** 🔄 Obtener muchos registros (paginado) */
     const fetchMany = useCallback(
         async (params?: {
             page?: number;
@@ -97,11 +101,10 @@ export function useEntityService<
             search?: string;
             include?: string | string[];
         }) => {
-            if (typeof adapter.fetchMany !== "function") {
+            if (typeof adapter.fetchMany !== "function")
                 throw new Error("El adapter no implementa fetchMany");
-            }
 
-            setState((prev) => ({ ...prev, isLoading: true }));
+            setState((p) => ({ ...p, isLoading: true }));
 
             const page = params?.page ?? state.pagination.page;
             const perPage = params?.perPage ?? state.pagination.perPage;
@@ -114,7 +117,10 @@ export function useEntityService<
                 include: params?.include ?? state.include,
             });
 
-            const processed = ProcessApiResponse<PaginatedData<T>>(response) as DataProviderResponse<PaginatedData<T>> & { errors?: E };
+            const processed = ProcessApiResponse<PaginatedData<T>>(response) as DataProviderResponse<
+                PaginatedData<T>
+            > & { errors?: E };
+
             if (processed.success && processed.data) {
                 setState((prev) => ({
                     ...prev,
@@ -136,111 +142,185 @@ export function useEntityService<
         [adapter, resource, state]
     );
 
-    /** Crear registro */
+    /** ➕ Crear registro */
     const add = useCallback(
         async (data: Partial<T>) => {
             if (typeof adapter.insert !== "function")
                 throw new Error("El adapter no implementa insert");
 
             const response = await adapter.insert<T>(resource, data);
-            const processed = ProcessApiResponse<T>(response) as DataProviderResponse<T> & { errors?: E };
-
+            const processed = handleResponse<T>(response);
             if (processed.success && processed.data) {
                 setState((prev) => ({
                     ...prev,
                     items: [processed.data as T, ...prev.items],
-                    error: null,
                 }));
-            } else {
-                setState((prev) => ({ ...prev, error: processed.errors ?? null }));
             }
-
             return processed;
         },
-        [adapter, resource]
+        [adapter, resource, handleResponse]
     );
 
-    /** Actualizar registro */
+    /** ✏️ Actualizar registro */
     const update = useCallback(
         async (id: string | number, data: Partial<T>) => {
             if (typeof adapter.modify !== "function")
                 throw new Error("El adapter no implementa modify");
 
             const response = await adapter.modify<T>(resource, { id }, data);
-            const processed = ProcessApiResponse<T>(response) as DataProviderResponse<T> & { errors?: E };
+            const processed = handleResponse<T>(response);
 
             if (processed.success && processed.data) {
                 setState((prev) => ({
                     ...prev,
                     items: prev.items.map((i) =>
-                        String(i.id) === String(id)
-                            ? { ...i, ...(processed.data as T) }
-                            : i
+                        String(i.id) === String(id) ? { ...i, ...(processed.data as T) } : i
                     ),
-                    error: null,
                 }));
-            } else {
-                setState((prev) => ({ ...prev, error: processed.errors ?? null }));
             }
-
             return processed;
         },
-        [adapter, resource]
+        [adapter, resource, handleResponse]
     );
 
-    /** Eliminar registro */
+    /** 🗑️ Eliminar registro */
     const remove = useCallback(
         async (id: string | number) => {
             if (typeof adapter.remove !== "function")
                 throw new Error("El adapter no implementa remove");
 
             const response = await adapter.remove<T>(resource, { id });
-            const processed = ProcessApiResponse(response) as DataProviderResponse<T> & { errors?: E };
+            const processed = handleResponse<T>(response);
 
             if (processed.success) {
                 setState((prev) => ({
                     ...prev,
                     items: prev.items.filter((i) => String(i.id) !== String(id)),
-                    error: null,
                 }));
-            } else {
-                setState((prev) => ({ ...prev, error: processed.errors ?? null }));
             }
-
             return processed;
         },
-        [adapter, resource]
+        [adapter, resource, handleResponse]
     );
 
-    /** Cambiar página */
-    const setPage = useCallback(
-        (page: number) =>
-            setState((prev) => ({
-                ...prev,
-                pagination: { ...prev.pagination, page },
-            })),
-        []
+    /** 📤 Importar desde archivo */
+    const importFromFile = useCallback(
+        async (file: File, extra?: Record<string, any>) => {
+            if (typeof adapter.uploadFile !== "function")
+                throw new Error("El adapter no implementa uploadFile");
+
+            setState((s) => ({ ...s, isLoading: true }));
+
+            const formData = new FormData();
+            formData.append("file", file);
+            if (extra)
+                Object.entries(extra).forEach(([k, v]) =>
+                    formData.append(k, String(v))
+                );
+
+            try {
+                const response = await adapter.uploadFile<T[]>(resource, formData);
+                const processed = handleResponse<T[]>(response);
+
+                if (processed.success) {
+                    await fetchMany(); // Refrescar listado tras importación
+                }
+
+                return processed;
+            } catch (err) {
+                return handleResponse<any>(err);
+            }
+        },
+        [adapter, resource, fetchMany, handleResponse]
     );
 
-    /** Cambiar perPage */
-    const setPerPage = useCallback(
-        (perPage: number) =>
-            setState((prev) => ({
-                ...prev,
-                pagination: { ...prev.pagination, perPage },
-            })),
-        []
+    /** 📥 Exportar datos */
+    const exportToFile = useCallback(
+        async (params?: {
+            format?: "csv" | "xlsx" | "json";
+            filter?: Record<string, any>;
+            sort?: Record<string, "asc" | "desc">;
+        }) => {
+            if (typeof adapter.downloadFile !== "function")
+                throw new Error("El adapter no implementa downloadFile");
+
+            setState((s) => ({ ...s, isLoading: true }));
+
+            try {
+                const blob = await adapter.downloadFile(resource, params ?? {});
+                setState((s) => ({ ...s, isLoading: false }));
+                return blob;
+            } catch (err) {
+                return handleResponse<any>(err);
+            }
+        },
+        [adapter, resource, handleResponse]
     );
 
-    /** Buscar / filtrar / ordenar / incluir relaciones */
-    const setSearch = (search: string) =>
-        setState((prev) => ({ ...prev, search }));
-    const setFilter = (filter: QueryFilter) =>
-        setState((prev) => ({ ...prev, filter }));
-    const setSort = (sort: SortCondition | SortCondition[]) =>
-        setState((prev) => ({ ...prev, sort }));
-    const setInclude = (include: string | string[]) =>
-        setState((prev) => ({ ...prev, include }));
+    /** 🗑️ Eliminar múltiples */
+    const deleteMany = useCallback(
+        async (ids: Array<string | number>) => {
+            if (typeof adapter.removeMany !== "function")
+                throw new Error("El adapter no implementa removeMany");
+
+            setState((s) => ({ ...s, isLoading: true }));
+
+            try {
+                const response = await adapter.removeMany(resource, { ids });
+                const processed = handleResponse<any>(response);
+
+                if (processed.success) {
+                    setState((prev) => ({
+                        ...prev,
+                        items: prev.items.filter((i) => !ids.includes(i.id as any)),
+                    }));
+                }
+                return processed;
+            } catch (err) {
+                return handleResponse<any>(err);
+            }
+        },
+        [adapter, resource, handleResponse]
+    );
+
+    /** ✏️ Actualizar múltiples */
+    const updateMany = useCallback(
+        async (items: Partial<T>[]) => {
+            if (typeof adapter.modifyMany !== "function")
+                throw new Error("El adapter no implementa modifyMany");
+
+            setState((s) => ({ ...s, isLoading: true }));
+
+            try {
+                const response = await adapter.modifyMany<T>(resource, items);
+                const processed = handleResponse<T[]>(response);
+
+                if (processed.success) {
+                    await fetchMany(); // Refrescar listado tras actualización masiva
+                }
+
+                return processed;
+            } catch (err) {
+                return handleResponse<any>(err);
+            }
+        },
+        [adapter, resource, fetchMany, handleResponse]
+    );
+
+    /** --- Helpers de estado --- */
+    const setPage = (page: number) =>
+        setState((prev) => ({
+            ...prev,
+            pagination: { ...prev.pagination, page },
+        }));
+    const setPerPage = (perPage: number) =>
+        setState((prev) => ({
+            ...prev,
+            pagination: { ...prev.pagination, perPage },
+        }));
+    const setSearch = (search: string) => setState((p) => ({ ...p, search }));
+    const setFilter = (filter: QueryFilter) => setState((p) => ({ ...p, filter }));
+    const setSort = (sort: SortCondition | SortCondition[]) => setState((p) => ({ ...p, sort }));
 
     /** Auto-fetch inicial */
     useEffect(() => {
@@ -253,12 +333,15 @@ export function useEntityService<
         add,
         update,
         remove,
+        importFromFile,
+        exportToFile,
+        deleteMany,
+        updateMany,
         setPage,
         setPerPage,
         setSearch,
         setFilter,
         setSort,
-        setInclude,
-        execute
+        execute,
     };
 }
