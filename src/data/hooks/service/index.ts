@@ -325,7 +325,7 @@ export function useResourceService<
     /** Auto-fetch inicial */
     useEffect(() => {
         if (options?.autoFetch !== false) fetchMany();
-    }, [state.pagination.page, state.search, state.filter, state.sort]);
+    }, [state.pagination.page, state.pagination.perPage, state.search, state.filter, state.sort]);
 
     return {
         ...state,
