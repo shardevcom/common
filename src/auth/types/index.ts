@@ -39,7 +39,7 @@ export interface PermissionAdapter <T extends AuthUser = AuthUser>{
     update(roles: Role[], permissions: Permission[]): void;
     getUser(): T;
     setUser(authUser: T): void;
-    isAuthenticated(): boolean;
+    isAuthenticated(guards?: string | string[]): boolean;
 }
 
 
