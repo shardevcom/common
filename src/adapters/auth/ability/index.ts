@@ -19,19 +19,15 @@ export class AuthAbilityAdapter<T extends AuthUser> extends BasePermissionAdapte
         const addPermission = (permission: any) => {
             if (!permission?.name) return;
 
-            // Normalizar separadores
-            const normalized = permission.name.trim().replace(/[.\s-]/, ':')  // Convertir ., espacio y - a :
+            const rawName = permission.name.trim();
+            const match = rawName.match(/^([^:.\s-]+)[:.\s-](.+)$/);
 
-            // Dividir en partes
-            const parts = normalized.split(":").filter(Boolean);
-
-            if (parts.length >= 2) {
-                const action = parts[0];
-                const subject = parts.slice(1).join(":"); // todo lo demás es el sujeto
+            if (match) {
+                const action = match[1]; // Ejemplo: 'view'
+                const subject = match[2]; // Ejemplo: 'brand-resolution' (mantiene el guion)
                 ability.can(action, subject);
             } else {
-                // Default: si no hay separación clara, asumir "view"
-                ability.can("view", normalized);
+                ability.can("view", rawName);
             }
         };
 
