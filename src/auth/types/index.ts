@@ -44,10 +44,16 @@ export interface PermissionAdapter <T extends AuthUser = AuthUser>{
 
 
 export abstract class BasePermissionAdapter<T extends AuthUser> implements PermissionAdapter {
-    constructor(protected authUser: T, protected guard?: string) {
+    protected constructor(
+        protected authUser: T,
+        protected guard?: string,
+        protected availableActions?: string[]
+    ) {
         this.authUser = authUser;
         this.guard = guard;
+        this.availableActions = availableActions;
     }
+
     abstract can(action: string, subject: any): boolean;
     canAny(actions: string | string[], subject: any): boolean {
         const arr = this.normalizeActions(actions);

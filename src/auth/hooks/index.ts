@@ -31,13 +31,14 @@ export const usePermissions = <T extends AuthUser = AuthUser>(): PermissionAdapt
 
 
 export const useAuthAbilityAdapter = <T extends AuthUser = AuthUser>(
-    guard: string = 'api'
+    guard: string = 'api',
+    availableActions?: string[]
 ): AuthAbilityAdapter<T> | null => {
     const authUser = useAppSelector((state) => state.auth.authUser);
 
     return useMemo(() => {
-        return new AuthAbilityAdapter<T>(authUser as T, guard);
-    }, [authUser, guard]);
+        return new AuthAbilityAdapter<T>(authUser as T, guard, availableActions);
+    }, [authUser, guard, availableActions]);
 };
 
 
