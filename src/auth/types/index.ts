@@ -68,8 +68,17 @@ export abstract class BasePermissionAdapter<T extends AuthUser> implements Permi
         this.authUser = authUser
     }
 
-    isAuthenticated(): boolean {
-        return !!this.authUser?.access_token && !!this.authUser?.id;
+    isAuthenticated(guards?: string | string[]): boolean {
+        const isAuth = !!this.authUser?.access_token && !!this.authUser?.id;
+
+        if (!isAuth) return false;
+
+        // Si no se especifica guard → comportamiento actual
+        if (!guards) return true;
+
+        const allowedGuards = Array.isArray(guards) ? guards : [guards];
+
+        return this.guard ? allowedGuards.includes(this.guard) : false;
     }
 
     private normalizeActions(actions: string | string[]): string[] {
