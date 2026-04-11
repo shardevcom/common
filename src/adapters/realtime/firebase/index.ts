@@ -1,16 +1,19 @@
 import { initializeApp, FirebaseApp } from "firebase/app";
 import { getDatabase, ref, onValue, off, Database } from "firebase/database";
 import {
-    BaseRealtimeAdapter, EventTypeRealtime,
+    BaseRealtimeAdapter,
+    EventTypeRealtime,
     RealtimeAdapter,
     RealtimeAdapterConfig,
-    RealtimeEvent, RealtimeFilter,
+    RealtimeEvent,
+    RealtimeFilter,
     RealtimeSubscription
 } from "@/realtime";
 
 export class RealtimeFirebaseAdapter extends BaseRealtimeAdapter implements RealtimeAdapter {
     private app: FirebaseApp;
     private db: Database;
+    private subscriptions = new Map<string, () => void>();
 
     constructor(config: RealtimeAdapterConfig) {
         super(config);
@@ -24,60 +27,76 @@ export class RealtimeFirebaseAdapter extends BaseRealtimeAdapter implements Real
     }
 
     connect() {
-        console.log("🔌 Firebase Realtime Database connected.");
+        this.markConnected(true);
     }
 
     disconnect() {
-        console.log("❌ Firebase Realtime Database disconnected.");
+        this.subscriptions.forEach((unsubscribe) => unsubscribe());
+        this.subscriptions.clear();
+        this.markConnected(false);
     }
 
-    async subscribe(
+    async subscribe<TRecord = any>(
         channel: string,
         filter: RealtimeFilter,
-        callback: (event: RealtimeEvent) => void
+        callback: (event: RealtimeEvent<TRecord>) => void
     ): Promise<RealtimeSubscription> {
         if (!channel) {
             throw new Error("Cannot subscribe: channel name is required.");
         }
 
         const dbRef = ref(this.db, channel);
-        console.log(`📡 Subscribed to Firebase Realtime channel: ${channel}`);
+        this.markConnected(true);
 
-        onValue(dbRef, (snapshot) => {
+        const unsubscribe = onValue(dbRef, (snapshot) => {
             const data = snapshot.val();
-            if (data) {
-                const events: EventTypeRealtime[] = filter.event === '*'
-                    ? ['INSERT', 'UPDATE', 'DELETE']
-                    : [filter?.event];
-
-                events.forEach(event => {
-                    callback({
-                        eventType: event || "UPDATE",
-                        table: channel,
-                        schema: "firebase",
-                        record: data,
-                        oldRecord: null, // Firebase no maneja registros previos
-                    });
-                });
+            if (data === null || data === undefined) {
+                return;
             }
+
+            const receivedAt = Date.now();
+            this.markEvent(receivedAt);
+
+            const events: EventTypeRealtime[] = filter.event === '*'
+                ? ['INSERT', 'UPDATE', 'DELETE']
+                : [filter?.event];
+
+            events.forEach((event) => {
+                callback({
+                    channel,
+                    eventType: event || "UPDATE",
+                    table: filter.table ?? channel,
+                    schema: "firebase",
+                    eventName: filter.eventName,
+                    record: data as TRecord,
+                    oldRecord: null,
+                    raw: data,
+                    receivedAt,
+                });
+            });
+        }, (error) => {
+            this.markError(error);
         });
+
+        this.subscriptions.set(channel, unsubscribe);
 
         return {
             unsubscribe: () => {
+                unsubscribe();
+                this.subscriptions.delete(channel);
                 off(dbRef);
-                console.log(`🔕 Unsubscribed from Firebase channel: ${channel}`);
             },
         };
     }
 
     unsubscribe(channel: string) {
         if (!channel) {
-            console.warn("⚠️ Cannot unsubscribe: channel name is required.");
             return;
         }
 
         const dbRef = ref(this.db, channel);
+        this.subscriptions.get(channel)?.();
+        this.subscriptions.delete(channel);
         off(dbRef);
-        console.log(`🔕 Unsubscribed from Firebase channel: ${channel}`);
     }
 }
