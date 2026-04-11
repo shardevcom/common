@@ -39,7 +39,7 @@ export interface RealtimeReverbAdapterConfig extends RealtimeAdapterConfig {
 }
 
 export class RealtimeReverbAdapter extends BaseRealtimeAdapter implements RealtimeAdapter {
-    private echo?: Echo;
+    private echo?: Echo<any>;
     private channels = new Map<string, ReverbChannelSubscription>();
     private connectionBound = false;
 
@@ -160,20 +160,23 @@ export class RealtimeReverbAdapter extends BaseRealtimeAdapter implements Realti
 
         (globalThis as { Pusher?: typeof Pusher }).Pusher = Pusher;
 
+        // Extraemos las opciones para no duplicarlas en el constructor
+        const { key, wsHost, wsPort, wssPort, forceTLS, enabledTransports, authEndpoint, auth, ...restOptions } = config.options;
+
         this.echo = new Echo({
             broadcaster: "reverb",
-            key: config.options.key,
-            wsHost: config.options.wsHost,
-            wsPort: config.options.wsPort ?? 80,
-            wssPort: config.options.wssPort ?? 443,
-            forceTLS: config.options.forceTLS ?? true,
-            enabledTransports: config.options.enabledTransports ?? ["ws", "wss"],
-            authEndpoint: config.options.authEndpoint,
-            ...config.options,
+            key: key,
+            wsHost: wsHost,
+            wsPort: wsPort ?? 80,
+            wssPort: wssPort ?? 443,
+            forceTLS: forceTLS ?? true,
+            enabledTransports: enabledTransports ?? ["ws", "wss"],
+            authEndpoint: authEndpoint,
+            ...restOptions, // Usamos lo que sobre de las opciones aquí
             auth: {
-                ...(config.options.auth ?? {}),
+                ...(auth ?? {}),
                 headers: {
-                    ...(config.options.auth?.headers ?? {}),
+                    ...(auth?.headers ?? {}),
                     ...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
                 },
             },
