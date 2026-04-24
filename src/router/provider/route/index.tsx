@@ -1,25 +1,18 @@
 import React, { useState, useMemo, useEffect, useRef, ReactNode } from 'react';
 import { BrowserRouter, useRoutes } from 'react-router-dom';
 import { useSafeContext } from "@/utils";
-import { RouteContext, RouteContextType, useRouteContext, parseRoutes, RouteConfig} from "@/router";
+import {
+    RouteContext,
+    RouteContextType,
+    useRouteContext,
+    parseRoutes,
+    RouteConfig
+} from "@/router";
 import { AuthUser } from "@/auth";
 
 interface UnifiedRouterProps<T extends AuthUser = AuthUser> {
     routes: RouteConfig<T>[];
     children?: ReactNode;
-    prefix?: string;
-}
-
-function applyPrefixToRoutes<T extends AuthUser = AuthUser>(
-    routes: RouteConfig<T>[],
-    prefix?: string
-): RouteConfig<T>[] {
-    if (!prefix) return routes;
-    return routes.map(route => ({
-        ...route,
-        path: `${prefix}/${route.path}`.replace(/\/+/g, '/'),
-        children: route.children
-    }));
 }
 
 const InnerRouter = () => {
@@ -28,29 +21,27 @@ const InnerRouter = () => {
 };
 
 export const RouterProvider = <T extends AuthUser>({
-                                                              routes: newRoutes,
-                                                              children,
-                                                              prefix
-                                                          }: UnifiedRouterProps<T>) => {
-    // Hook siempre se llama
+                                                       routes: newRoutes,
+                                                       children
+                                                   }: UnifiedRouterProps<T>) => {
+
     const parentContext = useSafeContext<RouteContextType<T> | null>(RouteContext);
 
     const hasAddedRoutes = useRef(false);
 
     const [routes, setRoutes] = useState<RouteConfig<T>[]>(() =>
-        parentContext
-            ? [] // si hay contexto padre, no necesitamos rutas locales
-            : applyPrefixToRoutes(newRoutes, prefix)
+        parentContext ? [] : newRoutes
     );
 
     const addRoutes = (routesToAdd: RouteConfig<T>[]) => {
-        const prefixedRoutes = applyPrefixToRoutes(routesToAdd, prefix);
         if (parentContext) {
-            parentContext.addRoutes(prefixedRoutes);
+            parentContext.addRoutes(routesToAdd);
         } else {
             setRoutes(prev => {
                 const existingPaths = new Set(prev.map(r => r.path));
-                const uniqueNewRoutes = prefixedRoutes.filter(r => !existingPaths.has(r.path));
+                const uniqueNewRoutes = routesToAdd.filter(
+                    r => !existingPaths.has(r.path)
+                );
                 return [...prev, ...uniqueNewRoutes];
             });
         }
@@ -65,16 +56,20 @@ export const RouterProvider = <T extends AuthUser>({
 
     const contextValue: RouteContextType<T> = useMemo(() => {
         return parentContext
-            ? { routes: parentContext.routes, addRoutes, prefix }
-            : { routes, addRoutes, prefix };
-    }, [routes, parentContext, prefix]);
+            ? { routes: parentContext.routes, addRoutes }
+            : { routes, addRoutes };
+    }, [routes, parentContext]);
 
-    // Si hay un contexto padre, solo renderizamos los children
+    // 🔥 CASO EMBEBIDO (microfrontend)
     if (parentContext) {
-        return <>{children}</>;
+        return (
+            <RouteContext.Provider value={contextValue}>
+                {children}
+            </RouteContext.Provider>
+        );
     }
 
-    // Si no hay contexto padre, creamos el RouterProvider completo
+    // 🔥 CASO ROOT (standalone)
     return (
         <RouteContext.Provider value={contextValue}>
             <BrowserRouter>

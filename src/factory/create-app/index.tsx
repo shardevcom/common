@@ -1,8 +1,12 @@
-import React, {ComponentType, ReactNode} from 'react';
-import {Middleware, ReducersMapObject} from '@reduxjs/toolkit';
-import {useSafeContext} from "@/utils";
-import {StateFromReducersMapObject, StoreConfig, StoreContext, StoreProvider} from "@/store";
-
+import React, { ComponentType, ReactNode } from 'react';
+import { Middleware, ReducersMapObject } from '@reduxjs/toolkit';
+import { useSafeContext } from "@/utils";
+import {
+    StateFromReducersMapObject,
+    StoreConfig,
+    StoreContext,
+    StoreProvider
+} from "@/store";
 
 export type AppOption =
     | ComponentType<any>
@@ -27,11 +31,13 @@ export function createApp<TSlices>({
                                        middlewares = [],
                                        initialState = {},
                                        props = {}
-                                   }: SetupOptions<TSlices>): React.FC {
+                                   }: SetupOptions<TSlices>): React.FC<any> {
+
     const Component = app as ComponentType<any>;
 
-    return () => { // ← Devuelve directamente la función componente
+    return (incomingProps: any) => {
         const existing = useSafeContext(StoreContext);
+
         const storeConfig: StoreConfig<TSlices> | undefined = slices
             ? {
                 keyName: name,
@@ -42,21 +48,21 @@ export function createApp<TSlices>({
             }
             : undefined;
 
+        const mergedProps = { ...props, ...incomingProps };
+
         if (existing && slices) {
-            if (storeConfig?.slices) {
-                existing.addReducers(storeConfig.slices as ReducersMapObject);
-            }
-            return <Component {...props} />;
+            existing.addReducers(slices as ReducersMapObject);
+            return <Component {...mergedProps} />;
         }
 
         if (storeConfig) {
             return (
                 <StoreProvider config={storeConfig}>
-                    <Component {...props} />
+                    <Component {...mergedProps} />
                 </StoreProvider>
             );
         }
 
-        return <Component {...props} />;
+        return <Component {...mergedProps} />;
     };
 }
