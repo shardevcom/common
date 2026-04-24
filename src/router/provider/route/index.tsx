@@ -17,6 +17,7 @@ interface UnifiedRouterProps<T extends AuthUser = AuthUser> {
 
 const InnerRouter = () => {
     const context = useRouteContext();
+    console.log('USING ROUTES:', context.routes);
     return useRoutes(parseRoutes(context.routes));
 };
 
@@ -55,6 +56,8 @@ export const RouterProvider = <T extends AuthUser>({
         routes,
         addRoutes
     };
+
+    console.log('ROOT ROUTES:', routes);
 
     return (
         <RouteContext.Provider value={contextValue}>
