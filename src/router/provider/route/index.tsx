@@ -27,49 +27,35 @@ export const RouterProvider = <T extends AuthUser>({
 
     const parentContext = useSafeContext<RouteContextType<T> | null>(RouteContext);
 
-    const hasAddedRoutes = useRef(false);
-
-    const [routes, setRoutes] = useState<RouteConfig<T>[]>(() =>
-        parentContext ? [] : newRoutes
-    );
-
-    const addRoutes = (routesToAdd: RouteConfig<T>[]) => {
-        if (parentContext) {
-            parentContext.addRoutes(routesToAdd);
-        } else {
-            setRoutes(prev => {
-                const existingPaths = new Set(prev.map(r => r.path));
-                const uniqueNewRoutes = routesToAdd.filter(
-                    r => !existingPaths.has(r.path)
-                );
-                return [...prev, ...uniqueNewRoutes];
-            });
-        }
-    };
-
-    useEffect(() => {
-        if (!hasAddedRoutes.current && newRoutes.length > 0) {
-            addRoutes(newRoutes);
-            hasAddedRoutes.current = true;
-        }
-    }, [newRoutes]);
-
-    const contextValue: RouteContextType<T> = useMemo(() => {
-        return parentContext
-            ? { routes: parentContext.routes, addRoutes }
-            : { routes, addRoutes };
-    }, [routes, parentContext]);
-
-    // 🔥 CASO EMBEBIDO (microfrontend)
+    // 🔥 SI HAY CONTEXTO PADRE → REGISTRA INMEDIATAMENTE
     if (parentContext) {
+        parentContext.addRoutes(newRoutes);
+
         return (
-            <RouteContext.Provider value={contextValue}>
+            <RouteContext.Provider value={parentContext}>
                 {children}
             </RouteContext.Provider>
         );
     }
 
-    // 🔥 CASO ROOT (standalone)
+    // 🔥 ROOT MODE
+    const [routes, setRoutes] = useState<RouteConfig<T>[]>(newRoutes);
+
+    const addRoutes = (routesToAdd: RouteConfig<T>[]) => {
+        setRoutes(prev => {
+            const existingPaths = new Set(prev.map(r => r.path));
+            const uniqueNewRoutes = routesToAdd.filter(
+                r => !existingPaths.has(r.path)
+            );
+            return [...prev, ...uniqueNewRoutes];
+        });
+    };
+
+    const contextValue: RouteContextType<T> = {
+        routes,
+        addRoutes
+    };
+
     return (
         <RouteContext.Provider value={contextValue}>
             <BrowserRouter>
