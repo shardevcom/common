@@ -1,5 +1,13 @@
 import { initializeApp, FirebaseApp } from "firebase/app";
-import { getDatabase, ref, onValue, off, Database } from "firebase/database";
+import {
+    getDatabase,
+    ref,
+    onValue,
+    off,
+    Database,
+    DataSnapshot
+} from "firebase/database";
+
 import {
     BaseRealtimeAdapter,
     EventTypeRealtime,
@@ -36,11 +44,12 @@ export class RealtimeFirebaseAdapter extends BaseRealtimeAdapter implements Real
         this.markConnected(false);
     }
 
-    async subscribe<TRecord = any>(
+    async subscribe<TRecord = unknown>(
         channel: string,
         filter: RealtimeFilter,
         callback: (event: RealtimeEvent<TRecord>) => void
     ): Promise<RealtimeSubscription> {
+
         if (!channel) {
             throw new Error("Cannot subscribe: channel name is required.");
         }
@@ -48,35 +57,41 @@ export class RealtimeFirebaseAdapter extends BaseRealtimeAdapter implements Real
         const dbRef = ref(this.db, channel);
         this.markConnected(true);
 
-        const unsubscribe = onValue(dbRef, (snapshot) => {
-            const data = snapshot.val();
-            if (data === null || data === undefined) {
-                return;
-            }
+        const unsubscribe = onValue(
+            dbRef,
+            (snapshot: DataSnapshot) => {
+                const data = snapshot.val();
 
-            const receivedAt = Date.now();
-            this.markEvent(receivedAt);
+                if (data === null || data === undefined) {
+                    return;
+                }
 
-            const events: EventTypeRealtime[] = filter.event === '*'
-                ? ['INSERT', 'UPDATE', 'DELETE']
-                : [filter?.event];
+                const receivedAt = Date.now();
+                this.markEvent(receivedAt);
 
-            events.forEach((event) => {
-                callback({
-                    channel,
-                    eventType: event || "UPDATE",
-                    table: filter.table ?? channel,
-                    schema: "firebase",
-                    eventName: filter.eventName,
-                    record: data as TRecord,
-                    oldRecord: null,
-                    raw: data,
-                    receivedAt,
+                const events: EventTypeRealtime[] =
+                    filter.event === '*'
+                        ? ['INSERT', 'UPDATE', 'DELETE']
+                        : [filter?.event ?? 'UPDATE'];
+
+                events.forEach((event) => {
+                    callback({
+                        channel,
+                        eventType: event,
+                        table: filter.table ?? channel,
+                        schema: "firebase",
+                        eventName: filter.eventName,
+                        record: data as TRecord,
+                        oldRecord: null,
+                        raw: data,
+                        receivedAt,
+                    });
                 });
-            });
-        }, (error) => {
-            this.markError(error);
-        });
+            },
+            (error: Error) => {
+                this.markError(error);
+            }
+        );
 
         this.subscriptions.set(channel, unsubscribe);
 
@@ -90,13 +105,16 @@ export class RealtimeFirebaseAdapter extends BaseRealtimeAdapter implements Real
     }
 
     unsubscribe(channel: string) {
-        if (!channel) {
-            return;
-        }
+        if (!channel) return;
 
         const dbRef = ref(this.db, channel);
-        this.subscriptions.get(channel)?.();
-        this.subscriptions.delete(channel);
+
+        const unsubscribe = this.subscriptions.get(channel);
+        if (unsubscribe) {
+            unsubscribe();
+            this.subscriptions.delete(channel);
+        }
+
         off(dbRef);
     }
 }

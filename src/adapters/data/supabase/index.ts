@@ -1,6 +1,13 @@
-import {createClient, RealtimeChannel, SignInWithPasswordCredentials, SupabaseClient} from "@supabase/supabase-js";
-import {v4 as uuidv4} from 'uuid';
+import {
+    createClient,
+    RealtimeChannel,
+    SignInWithPasswordCredentials,
+    SupabaseClient
+} from "@supabase/supabase-js";
+
+import { v4 as uuidv4 } from 'uuid';
 import localStorage from "redux-persist/es/storage";
+
 import {
     BaseDataAdapter,
     DataAdapter,
@@ -11,8 +18,9 @@ import {
     SortCondition,
     StorageConfig
 } from "@/data";
-import {AuthUser, Role} from "@/auth";
-import {buildQuery} from "@/utils/filter";
+
+import { AuthUser, Role } from "@/auth";
+import { buildQuery } from "@/utils/filter";
 
 export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter {
     private client: SupabaseClient;
@@ -20,11 +28,13 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
 
     constructor(config: DataAdapterConfig) {
         super(config);
+
         if (!config.baseURL) {
-            throw new Error("Supabase baseURL (URL del proyecto) is required");
+            throw new Error("Supabase baseURL is required");
         }
+
         if (!config.token) {
-            throw new Error("Supabase token (anon key) is required");
+            throw new Error("Supabase anon key is required");
         }
 
         const authToken = this.getAuthToken();
@@ -41,199 +51,198 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
             global: {
                 headers: {
                     'Content-Type': 'application/json',
-                    ...(authToken ? { "Authorization": `Bearer ${authToken}` } : {}),
+                    ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
                 }
             }
         });
     }
 
     // =============================
-    // 🛡️ Manejo de Errores y Auth
+    // 🛡️ Helpers
     // =============================
 
     private getAuthToken(): string | undefined {
-        const state = this.store?.getState();
-        return state?.auth?.authUser?.access_token;
+        return this.store?.getState()?.auth?.authUser?.access_token;
     }
 
     private async resetSession() {
-        console.warn("Session expired: resetting authentication state.");
-        if (this.store) {
-            this.store.dispatch({ type: 'RESET_STATE' });
-        }
+        this.store?.dispatch({ type: 'RESET_STATE' });
     }
 
-    private isAuthError(err: any): boolean {
-        if (!err) return false;
-        const status = err.status || err.statusCode;
-        const code = err.code;
-        const message = typeof err.message === 'string' ? err.message.toLowerCase() : '';
+    private toSupabasePayload<T>(data: unknown): T {
+        return data as T;
+    }
+
+    private isAuthError(err: unknown): boolean {
+        if (!err || typeof err !== 'object') return false;
+
+        const e = err as any;
+
+        const message = typeof e.message === 'string' ? e.message.toLowerCase() : '';
 
         return (
-            status === 401 ||
-            code === "PGRST301" ||
+            e.status === 401 ||
+            e.code === "PGRST301" ||
             message.includes('jwt expired') ||
             message.includes('invalid api key')
         );
     }
 
-    /**
-     * Corregido para cumplir con: Record<string, unknown> | undefined
-     */
-    private createDataProviderResponse<TResponseData>(
-        data: TResponseData | null,
-        error: any,
-        status?: number | string,
-        message?: string
-    ): DataProviderResponse<TResponseData> {
-        const success = !error;
-
-        // Transformamos el error en un objeto plano (Record) y usamos undefined si no hay error
-        const errorObject = error ? {
-            message: error.message || 'An error occurred',
-            code: error.code || 'UNKNOWN_ERROR',
-            details: error.details || null,
-            hint: error.hint || null
-        } as Record<string, unknown> : undefined;
+    private createResponse<T>(
+        data: T | null,
+        error: unknown,
+        status?: number | string
+    ): DataProviderResponse<T> {
+        const err = error as any;
 
         return {
-            success,
-            message: message || error?.message || (success ? 'Query executed successfully' : 'An error occurred'),
-            errors: errorObject, // ✅ Corregido: ya no es Array ni null
+            success: !error,
             data,
-            status: status?.toString() || (success ? '200' : '500'),
-            originalError: error,
+            status: status?.toString() ?? (error ? '500' : '200'),
+            message: err?.message ?? (error ? 'Error' : 'OK'),
+            errors: error
+                ? {
+                    message: err?.message,
+                    code: err?.code,
+                    details: err?.details
+                }
+                : undefined,
+            originalError: error
         };
     }
 
-    private async handleRequest<TResponseData>(
-        query: (client: SupabaseClient) => Promise<any>
-    ): Promise<DataProviderResponse<TResponseData>> {
+    private async handle<T>(fn: (client: SupabaseClient) => Promise<any>) {
         try {
-            const result = await query(this.client);
-            const { data, error, status } = result;
+            const { data, error, status } = await fn(this.client);
 
             if (error) {
                 if (this.isAuthError(error)) {
                     await this.resetSession();
-                    return this.createDataProviderResponse<TResponseData>(null, error, 401, "Session expired");
+                    return this.createResponse<T>(null, error, 401);
                 }
-                return this.createDataProviderResponse<TResponseData>(null, error, status || 400);
+
+                return this.createResponse<T>(null, error, status);
             }
 
-            return this.createDataProviderResponse<TResponseData>(data, null, status || 200);
+            return this.createResponse<T>(data, null, status);
 
-        } catch (error: any) {
-            console.error("Supabase Adapter Exception:", error);
-
+        } catch (error) {
             if (this.isAuthError(error)) {
                 await this.resetSession();
-                return this.createDataProviderResponse<TResponseData>(null, error, 401);
+                return this.createResponse<T>(null, error, 401);
             }
 
-            return this.createDataProviderResponse<TResponseData>(null, error, error?.status || 500);
+            return this.createResponse<T>(null, error, 500);
         }
     }
 
     // =============================
-    // 📊 Operaciones de Datos
+    // 📊 CRUD
     // =============================
 
-    async fetch<TResponseData>(resource: string, params?: {
-        sort?: SortCondition | SortCondition[];
-        filter?: QueryFilter;
-        fields?: string | string[];
-        include?: string | string[];
-    }): Promise<DataProviderResponse<TResponseData>> {
-        return this.handleRequest(async (client) => buildQuery(client, resource, params));
+    async fetch<T>(resource: string, params?: any) {
+        return this.handle<T>((c) => buildQuery(c, resource, params));
     }
 
-    async fetchOne<TResponseData>(resource: string, params?: {
-        sort?: SortCondition | SortCondition[];
-        filter?: QueryFilter;
-        fields?: string | string[];
-        include?: string | string[];
-    }): Promise<DataProviderResponse<TResponseData>> {
-        return this.handleRequest(async (client) => {
-            return buildQuery<TResponseData>(client, resource, params).limit(1).single();
-        });
+    async fetchOne<T>(resource: string, params?: any) {
+        return this.handle<T>((c) =>
+            buildQuery(c, resource, params).limit(1).single()
+        );
     }
 
-    async fetchMany<TResponseData>(resource: string, params?: {
-        pagination?: { page: number; perPage: number };
-        sort?: SortCondition | SortCondition[];
-        filter?: QueryFilter;
-        fields?: string | string[];
-        include?: string | string[];
-    }): Promise<DataProviderResponse<TResponseData>> {
-        return this.handleRequest(async (client) => {
-            let query = buildQuery(client, resource, params);
+    async fetchMany<T>(resource: string, params?: any) {
+        return this.handle<T>((c) => {
+            let q = buildQuery(c, resource, params);
+
             if (params?.pagination) {
                 const from = (params.pagination.page - 1) * params.pagination.perPage;
                 const to = from + params.pagination.perPage - 1;
-                query = query.range(from, to);
+                q = q.range(from, to);
             }
-            return query;
+
+            return q;
         });
     }
 
-    async fetchById<TResponseData>(resource: string, id: string | number): Promise<DataProviderResponse<TResponseData>> {
-        return this.handleRequest(async (client) => {
-            return client.from(resource).select('*').eq('id', id).single();
+    async fetchById<T>(resource: string, id: string | number) {
+        return this.handle<T>(async (c) =>
+            c.from(resource).select('*').eq('id', id).single()
+        );
+    }
+
+    async insert<T, P = T>(resource: string, data: Partial<P>) {
+        return this.handle<T>(async (c) => {
+            const payload = (Array.isArray(data) ? data : [data]) as P[];
+
+            const q =  c.from(resource).insert(payload).select();
+
+            return Array.isArray(data) ? q : q.single();
         });
     }
 
-    async insert<TResponseData, TParams = TResponseData>(resource: string, data: Partial<TParams>): Promise<DataProviderResponse<TResponseData>> {
-        return this.handleRequest(async (client) => {
-            const isArray = Array.isArray(data);
-            const query = client.from(resource).insert(isArray ? data : [data]).select();
-            return (isArray ? query : query.single());
-        });
-    }
+    async modify<T, P = T>(
+        resource: string,
+        params: { id?: string | number; filter?: QueryFilter },
+        data: Partial<P>
+    ) {
+        return this.handle<T>(async (c) => {
 
-    async modify<TResponseData, TParams = TResponseData>(resource: string, params: {
-        id?: string | number;
-        filter?: QueryFilter;
-    }, data: Partial<TParams>): Promise<DataProviderResponse<TResponseData>> {
-        const { id, filter } = params;
-        return this.handleRequest(async (client) => {
-            let query = client.from(resource).update(data);
-            if (id !== undefined) {
-                query = query.eq('id', id);
-            } else if (filter) {
-                Object.entries(filter).forEach(([field, value]) => { query = query.eq(field, value); });
+            const payload =  this.toSupabasePayload<P[]>(
+                Array.isArray(data) ? data : [data]
+            );
+
+            let q = c.from(resource).update(payload);
+
+            if (params.id !== undefined) {
+                q = q.eq('id', params.id);
+            } else if (params.filter) {
+                Object.entries(params.filter).forEach(([k, v]) => {
+                    q = q.eq(k, v);
+                });
             } else {
-                throw new Error("Either 'id' or 'filter' must be provided for modify operation.");
+                throw new Error("id or filter required");
             }
-            return query.select().single();
+
+            return q.select().single();
         });
     }
 
-    async upsert<TResponseData, TParams = TResponseData>(resource: string, data: Partial<TParams>, uniqueFields?: [string, ...string[]]): Promise<DataProviderResponse<TResponseData>> {
-        return this.handleRequest(async (client) => {
-            const isArray = Array.isArray(data);
-            const query = client.from(resource).upsert(isArray ? data : [data], {
-                onConflict: uniqueFields?.join(','),
-            }).select();
-            return (isArray ? query : query.single());
+    async upsert<T, P = T>(
+        resource: string,
+        data: Partial<P>,
+        uniqueFields?: [string, ...string[]]
+    ) {
+        return this.handle<T>(async (c) => {
+            const payload = (Array.isArray(data) ? data : [data]) as P[];
+
+            const q = c.from(resource)
+                .upsert(payload, {
+                    onConflict: uniqueFields?.join(',')
+                })
+                .select();
+
+            return Array.isArray(data) ? q : q.single();
         });
     }
 
-    async remove<TResponseData>(resource: string, params: {
-        id?: string | number;
-        filter?: QueryFilter;
-    }): Promise<DataProviderResponse<TResponseData>> {
-        const { id, filter } = params;
-        return this.handleRequest(async (client) => {
-            let query = client.from(resource).delete();
-            if (id !== undefined) {
-                query = query.eq('id', id);
-            } else if (filter) {
-                Object.entries(filter).forEach(([field, value]) => { query = query.eq(field, value); });
+    async remove<T>(
+        resource: string,
+        params: { id?: string | number; filter?: QueryFilter }
+    ) {
+        return this.handle<T>(async (c) => {
+            let q = c.from(resource).delete();
+
+            if (params.id !== undefined) {
+                q = q.eq('id', params.id);
+            } else if (params.filter) {
+                Object.entries(params.filter).forEach(([k, v]) => {
+                    q = q.eq(k, v);
+                });
             } else {
-                throw new Error("Either 'id' or 'filter' must be provided for remove operation.");
+                throw new Error("id or filter required");
             }
-            return query.select().single();
+
+            return q.select().single();
         });
     }
 
@@ -241,140 +250,103 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
     // 📁 Storage
     // =============================
 
-    async upload<TResponseData>(resource: string, params: {
+    async upload<T>(resource: string, params: {
         file: FileType;
-        metadata?: Record<string, any>;
+        metadata?: Record<string, unknown>;
         storage?: StorageConfig;
-    }): Promise<DataProviderResponse<TResponseData>> {
-        return this.handleRequest(async (client) => {
+    }) {
+        return this.handle<T>(async (c) => {
             const files = Array.isArray(params.file) ? params.file : [params.file];
-            if (!files.length) throw new Error("No files found.");
-
-            if (params.storage) this.defaultStorage = { ...this.defaultStorage, ...params.storage };
-            this.validateFileTypes(files.filter(file => file instanceof File) as File[]);
 
             const results = [];
+
             for (const file of files) {
                 if (!(file instanceof File)) continue;
-                const uniqueFileName = `${uuidv4()}.${file.name.split('.').pop()}`;
-                const filePath = `${resource}/${this.defaultStorage?.directory ? this.defaultStorage.directory + '/' : ''}${uniqueFileName}`;
 
-                const { error: uploadError } = await client.storage
+                const name = `${uuidv4()}.${file.name.split('.').pop()}`;
+                const path = `${resource}/${name}`;
+
+                const { error } = await c.storage
                     .from(this.defaultStorage?.disk || 'default')
-                    .upload(filePath, file, { upsert: true });
+                    .upload(path, file, { upsert: true });
 
-                if (uploadError) throw uploadError;
+                if (error) throw error;
 
-                const { data: publicData } = client.storage
+                const { data } = c.storage
                     .from(this.defaultStorage?.disk || 'default')
-                    .getPublicUrl(filePath);
+                    .getPublicUrl(path);
 
-                results.push({ fileName: uniqueFileName, url: publicData.publicUrl, metadata: params.metadata });
+                results.push({
+                    fileName: name,
+                    url: data.publicUrl
+                });
             }
-            // Retorno manual exitoso
-            return { data: results as unknown as TResponseData, error: null, status: 200 };
+
+            return { data: results, error: null, status: 200 };
         });
     }
 
-    private validateFileTypes(files: File[]): void {
-        const allowed = this.defaultStorage?.allowedTypes;
-        if (allowed) {
-            files.forEach(file => {
-                if (!allowed.includes(file.type)) throw new Error(`Invalid file type: ${file.type}`);
-            });
-        }
-    }
-
     // =============================
-    // 🔑 Autenticación (Auth)
+    // 🔐 AUTH
     // =============================
 
-    async signIn<TResponseData extends AuthUser = AuthUser, TParams = unknown>(credentials: TParams): Promise<DataProviderResponse<TResponseData>> {
-        const { data, error } = await this.client.auth.signInWithPassword(credentials as SignInWithPasswordCredentials);
-        return this.handleAuthResponse(data, error, 'Signed in successfully', error ? '401' : '200');
+    async signIn<T extends AuthUser>(credentials: unknown) {
+        const { data, error } =
+            await this.client.auth.signInWithPassword(
+                credentials as SignInWithPasswordCredentials
+            );
+
+        return this.createResponse<T>(
+            this.toSupabasePayload<T>(data),
+            error,
+            error ? 401 : 200
+        );
     }
 
-    async signOut(): Promise<DataProviderResponse> {
+    async signOut() {
         const { error } = await this.client.auth.signOut();
         await this.resetSession();
-        return this.createDataProviderResponse(null, error, error ? '500' : '200', 'Signed out successfully');
-    }
 
-    private async handleAuthResponse<TResponseData extends AuthUser>(
-        data: any,
-        error: any,
-        successMessage: string,
-        statusCode: string
-    ): Promise<DataProviderResponse<TResponseData>> {
-        if (error) return this.createDataProviderResponse<TResponseData>(null, error, statusCode);
-
-        if (this.store && data?.user && data?.session) {
-            const profileId = await this.fetchProfileId(data.user.id);
-            if (!profileId) return this.createDataProviderResponse<TResponseData>(null, { message: 'Profile not found' }, 404);
-            const roles = await this.fetchUserRolesAndPermissions(profileId);
-            const auth = {
-                id: data.user.id,
-                name: data.user.user_metadata.fullName || data.user.email,
-                email: data.user.email,
-                profile_id: profileId,
-                refresh_token: data.session.refresh_token,
-                access_token: data.session.access_token,
-                token_type: data.session.token_type,
-                expires_at: data.session.expires_at?.toString(),
-                roles: roles,
-                permissions: []
-            };
-            return this.createDataProviderResponse<TResponseData>(auth as unknown as TResponseData, null, statusCode, successMessage);
-        }
-        return this.createDataProviderResponse<TResponseData>(null, { message: 'Invalid session data' }, 500);
-    }
-
-    private async fetchProfileId(userId: string): Promise<string | undefined> {
-        const { data } = await this.client.from('user_profile_links').select('profile_id').eq('user_id', userId).single();
-        return data?.profile_id;
-    }
-
-    private async fetchUserRolesAndPermissions(profileId: string): Promise<Role[]> {
-        const { data: userRoles } = await this.client.from('user_roles').select('role_id').eq('profile_id', profileId);
-        if (!userRoles?.length) return [];
-
-        const { data: rawRoles } = await this.client.from('roles')
-            .select('*, role_permissions(permissions(*))')
-            .in('id', userRoles.map(r => r.role_id));
-
-        return (rawRoles ?? []).map(role => ({
-            id: role.id,
-            name: role.name,
-            guard_name: role.guard_name,
-            permissions: (role.role_permissions ?? []).map((rp: any) => rp.permissions)
-        }));
+        return this.createResponse(null, error);
     }
 
     // =============================
-    // 📡 Realtime & Otros
+    // 📡 Realtime
     // =============================
 
-    subscribe<TResponseData>(resource: string, callback: (data: TResponseData) => void): void {
+    subscribe<T>(resource: string, cb: (data: T) => void) {
         this.subscriptions[resource] = this.client
             .channel(`public:${resource}`)
-            .on('postgres_changes', {event: '*', schema: 'public', table: resource}, (payload) => {
-                callback(payload.new as TResponseData);
+            .on('postgres_changes', {
+                event: '*',
+                schema: 'public',
+                table: resource
+            }, (payload) => {
+                cb(payload.new as T);
             })
             .subscribe();
     }
 
-    unsubscribe(resource: string): void {
-        if (this.subscriptions[resource]) {
-            this.client.removeChannel(this.subscriptions[resource]);
+    unsubscribe(resource: string) {
+        const sub = this.subscriptions[resource];
+
+        if (sub) {
+            this.client.removeChannel(sub);
             delete this.subscriptions[resource];
         }
     }
 
-    async count<TResponseData = number>(resource: string, filter?: QueryFilter): Promise<DataProviderResponse<TResponseData>> {
-        return this.handleRequest(async (client) => {
-            let query = client.from(resource).select('*', { count: 'exact', head: true });
-            if (filter) Object.entries(filter).forEach(([f, v]) => { query = query.eq(f, v); });
-            return query;
+    async count<T = number>(resource: string, filter?: QueryFilter) {
+        return this.handle<T>(async (c) => {
+            let q = c.from(resource).select('*', { count: 'exact', head: true });
+
+            if (filter) {
+                Object.entries(filter).forEach(([k, v]) => {
+                    q = q.eq(k, v);
+                });
+            }
+
+            return q;
         });
     }
 }

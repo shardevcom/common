@@ -36,8 +36,6 @@ export default defineConfig({
                 "react-dom",
                 'firebase/app',
                 'firebase/database',
-                'firebase/firestore',
-                'firebase/auth',
                 "react-router-dom",
                 "@reduxjs/toolkit",
             ],
