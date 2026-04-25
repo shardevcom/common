@@ -29,11 +29,13 @@ export const RouterProvider = <T extends AuthUser>({
 
     const hasRegistered = useRef(false);
 
-    // 🔥 REGISTRAR SOLO UNA VEZ
-    if (parentContext && !hasRegistered.current) {
-        parentContext.addRoutes(newRoutes);
-        hasRegistered.current = true;
-    }
+    // ✅ CORRECTO: fuera del render
+    useEffect(() => {
+        if (parentContext && !hasRegistered.current) {
+            parentContext.addRoutes(newRoutes);
+            hasRegistered.current = true;
+        }
+    }, [parentContext, newRoutes]);
 
     if (parentContext) {
         return (
