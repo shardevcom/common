@@ -17,7 +17,6 @@ interface UnifiedRouterProps<T extends AuthUser = AuthUser> {
 
 const InnerRouter = () => {
     const context = useRouteContext();
-    console.log('USING ROUTES:', context.routes);
     return useRoutes(parseRoutes(context.routes));
 };
 
@@ -28,10 +27,15 @@ export const RouterProvider = <T extends AuthUser>({
 
     const parentContext = useSafeContext<RouteContextType<T> | null>(RouteContext);
 
-    // 🔥 SI HAY CONTEXTO PADRE → REGISTRA INMEDIATAMENTE
-    if (parentContext) {
-        parentContext.addRoutes(newRoutes);
+    const hasRegistered = useRef(false);
 
+    // 🔥 REGISTRAR SOLO UNA VEZ
+    if (parentContext && !hasRegistered.current) {
+        parentContext.addRoutes(newRoutes);
+        hasRegistered.current = true;
+    }
+
+    if (parentContext) {
         return (
             <RouteContext.Provider value={parentContext}>
                 {children}
@@ -56,8 +60,6 @@ export const RouterProvider = <T extends AuthUser>({
         routes,
         addRoutes
     };
-
-    console.log('ROOT ROUTES:', routes);
 
     return (
         <RouteContext.Provider value={contextValue}>
