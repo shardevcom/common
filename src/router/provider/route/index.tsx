@@ -39,10 +39,8 @@ export const RouterProvider = <T extends AuthUser>({
     if (parentContext) {
         return (
             <RouteContext.Provider value={parentContext}>
+                <InnerRouter />
                 {children}
-                {/* IMPORTANTE: No renderizamos <InnerRouter /> aquí
-                   porque el router ya está corriendo en el root.
-                */}
             </RouteContext.Provider>
         );
     }
