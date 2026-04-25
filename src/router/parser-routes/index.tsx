@@ -23,7 +23,7 @@ export const parseRoutes = (routes: RouteConfig[]): RouteObject[] => {
         }
 
         return {
-            path, // 🔥 NO manipular
+            path: path === '/' ? '' : path, // 🔥 NO manipular
             id,
             element: wrappedElement,
             children: children ? parseRoutes(children) : undefined,
