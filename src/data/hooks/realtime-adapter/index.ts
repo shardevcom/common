@@ -1,36 +1,58 @@
-import { useEffect, useMemo, useState } from "react";
-import { RealtimeReverbAdapterConfig } from "@/adapters/realtime/reverb";
-import { RealtimeReverbAdapter } from "@/adapters";
-import { useStoreContext } from "@/store";
+import {useEffect, useMemo, useRef} from "react";
+import {useStoreContext} from "@/store";
+import {RealtimeReverbAdapter, RealtimeReverbAdapterConfig} from "@/adapters";
 
 export const useReverbAdapter = (
-    config: Omit<RealtimeReverbAdapterConfig, "token">
-) => {
+    config: Omit<RealtimeReverbAdapterConfig, "token" | "onUnauthorized" | "onError">
+): RealtimeReverbAdapter | null => {
     const { store } = useStoreContext();
+    const adapterRef = useRef<RealtimeReverbAdapter | null>(null);
 
-    const [token, setToken] = useState(() => store.getState()?.auth?.authUser?.access_token);
-
-    useEffect(() => {
-        const unsubscribe = store.subscribe(() => {
-            const nextToken = store.getState()?.auth?.authUser?.access_token;
-            setToken((prevToken: string | undefined) =>
-                prevToken === nextToken ? prevToken : nextToken
-            );
-        });
-
-        return unsubscribe;
+    // Obtener token del store
+    const token = useMemo(() => {
+        return store?.getState()?.auth?.authUser?.access_token;
     }, [store]);
 
-    const adapter = useMemo(() => {
-        return new RealtimeReverbAdapter({
+    // Crear adaptador solo una vez
+    useEffect(() => {
+        if (adapterRef.current) return;
+
+        const adapterConfig: RealtimeReverbAdapterConfig = {
             ...config,
             token,
-        });
-    }, [config]);
+            onUnauthorized: () => {
+                console.warn("[Reverb] Unauthorized - session may have expired");
+                // Opcional: dispatchear acción de logout
+                store?.dispatch?.({ type: "auth/logout" });
+            },
+            onError: (error) => {
+                console.error("[Reverb] Connection error:", error);
+            },
+        };
 
+        const adapter = new RealtimeReverbAdapter(adapterConfig);
+        adapterRef.current = adapter;
+        adapter.connect();
+
+        // Cleanup
+        return () => {
+            if (adapterRef.current) {
+                adapterRef.current.disconnect();
+                adapterRef.current = null;
+            }
+        };
+    }, []); // Solo se ejecuta una vez
+
+    // Actualizar token cuando cambie en el store
     useEffect(() => {
-        adapter.setAuthToken?.(token);
-    }, [adapter, token]);
+        if (!adapterRef.current || !token) return;
+        return store?.subscribe(() => {
+            const newToken = store.getState()?.auth?.authUser?.access_token;
+            if (newToken !== token) {
+                adapterRef.current?.setAuthToken?.(newToken);
+            }
+        });
+    }, [store, token]);
 
-    return adapter;
+    return adapterRef.current;
 };
