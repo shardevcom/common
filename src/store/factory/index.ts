@@ -2,8 +2,10 @@ import { configureStore, combineReducers, ReducersMapObject, Reducer, UnknownAct
 import { persistStore, persistReducer, PersistConfig } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
 import { createEncryptor } from './encryptor';
-import {StateFromReducersMapObject, StoreConfig, StoreInstance, authReducer} from "@/store";
+import { authReducer} from "../slices/auth.slice";
+import { StateFromReducersMapObject, StoreConfig, StoreInstance } from "../types";
 import { PersistState } from "redux-persist/es/types";
+
 
 export const defaultSlices: ReducersMapObject = {
     auth: authReducer,
@@ -12,7 +14,6 @@ export const defaultSlices: ReducersMapObject = {
 export function createStoreFactory<Slices extends ReducersMapObject>(config: StoreConfig<Slices>): StoreInstance {
     const { initialState, keyName, secretKey } = config;
 
-    // Reducers registrados inicialmente (default + personalizados)
     const registeredReducers: ReducersMapObject = {
         ...defaultSlices,
         ...config.slices,
@@ -22,11 +23,11 @@ export function createStoreFactory<Slices extends ReducersMapObject>(config: Sto
 
     const buildReducer = () => {
         // Validar que los reducers sean funciones válidas
-        const validReducers = Object.fromEntries(
+        /**const validReducers = Object.fromEntries(
             Object.entries(registeredReducers).filter(([_, reducer]) => typeof reducer === 'function')
-        );
+        ); **/
 
-        const appReducer = combineReducers(validReducers) as Reducer<StateFromReducersMapObject<Slices>> & {
+        const appReducer = combineReducers(registeredReducers) as Reducer<StateFromReducersMapObject<Slices>> & {
             _persist: PersistState;
         };
 
@@ -40,11 +41,11 @@ export function createStoreFactory<Slices extends ReducersMapObject>(config: Sto
             return appReducer(state, action);
         };
 
-        const persistConfig: PersistConfig<any> = {
+        const persistConfig: PersistConfig<ReturnType<typeof appReducer>> = {
             key: keyName,
             storage,
             transforms: [encryptor],
-            whitelist: Object.keys(validReducers),
+            whitelist: Object.keys(registeredReducers),
         };
 
         return persistReducer(persistConfig, rootReducer);

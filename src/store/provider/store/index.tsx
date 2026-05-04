@@ -1,7 +1,9 @@
 import React, { ReactNode } from "react";
 import { Provider } from "react-redux";
 import { PersistGate } from "redux-persist/integration/react";
-import {createStoreFactory, StoreConfig, StoreContext} from "@/store";
+import {StoreConfig} from "../../types";
+import {StoreContext} from "../../context";
+import {createStoreFactory} from "../../factory";
 
 interface StoreProviderProps<Slices extends Record<string, any>> {
     config: StoreConfig<Slices>;

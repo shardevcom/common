@@ -1,6 +1,6 @@
 import React from "react";
 import { Navigate, NavigateProps, To } from "react-router-dom";
-import { useRouteContext } from "@/router";
+import { useRouteContext } from "../../context";
 
 /**
  * Redirige anteponiendo automáticamente el `prefix` del RouterProvider si existe.

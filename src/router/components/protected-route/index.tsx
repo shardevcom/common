@@ -1,6 +1,6 @@
 import React from "react";
 import {Navigate, useLocation} from "react-router-dom";
-import { PermissionAdapter, usePermissions } from "@/auth";
+import { PermissionAdapter, usePermissions } from "../../../auth";
 
 interface ProtectedRouteProps {
     children: React.ReactNode;

@@ -1,5 +1,5 @@
 import {Store, UnknownAction} from "redux";
-import {AuthUser} from "@/auth";
+import {AuthUser} from "../../auth";
 import {Reducer} from "@reduxjs/toolkit";
 
 export interface PaginatedData<T> {

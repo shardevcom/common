@@ -1,26 +1,25 @@
-import {Middleware, ReducersMapObject, Store} from "@reduxjs/toolkit";
+import {Middleware, Reducer, ReducersMapObject, Store} from "@reduxjs/toolkit";
 import {Persistor, PersistState} from "redux-persist/es/types";
-import {createStoreFactory} from "@/store";
+import {createStoreFactory} from "../../store/factory";
 
 
-export type StateFromReducersMapObject<TSlices extends ReducersMapObject> = {
-    [K in keyof TSlices]: TSlices[K] extends (...args: any) => any ? ReturnType<TSlices[K]> : never;
-} & { _persist: PersistState }; // 🔥 Asegurar que _persist SIEMPRE esté presente
+export type StateFromReducersMapObject<T extends ReducersMapObject> = {
+    [K in keyof T]: T[K] extends Reducer<infer S, any> ? S : never;
+}  & { _persist: PersistState };
 
-
-export interface StoreConfig<TSlices> {
-    initialState?: Partial<StateFromReducersMapObject<ReducersMapObject<TSlices>>>; // ✅ Estado inicial parcial
+export interface StoreConfig<TSlices extends ReducersMapObject> {
+    initialState?: Partial<StateFromReducersMapObject<TSlices>>; // ✅ Estado inicial parcial
     keyName: string;
     secretKey: string;
-    slices?: ReducersMapObject<TSlices>;
+    slices?: TSlices;
     middlewares?: Middleware[];
 }
 
-export interface StoreInstance {
-    store: Store;
+export interface StoreInstance<TSlices extends ReducersMapObject = ReducersMapObject> {
+    store: Store<StateFromReducersMapObject<TSlices>>;
     persist: Persistor;
-    addReducers: <TSlices>(TSlices: ReducersMapObject<TSlices>) => void;
-    registeredReducers?: Record<string, any>; // opcional
+    addReducers: (slices: ReducersMapObject) => void;
+    registeredReducers: TSlices;
 }
 
 export type StoreContextType = ReturnType<typeof createStoreFactory>;

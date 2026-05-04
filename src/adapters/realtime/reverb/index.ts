@@ -8,7 +8,7 @@ import {
     RealtimeEvent,
     RealtimeFilter,
     RealtimeSubscription
-} from "@/realtime";
+} from "../../../realtime";
 
 interface EchoChannelLike {
     listen(event: string, callback: (payload: unknown) => void): EchoChannelLike;
@@ -113,10 +113,8 @@ export class RealtimeReverbAdapter extends BaseRealtimeAdapter implements Realti
             throw new Error("Reverb adapter is not initialized.");
         }
 
-        // Asegurar que estamos conectados antes de suscribir
         if (!this.connected) {
             this.connect();
-            // Esperar un poco a que se conecte
             await this.waitForConnection();
         }
 
@@ -199,7 +197,6 @@ export class RealtimeReverbAdapter extends BaseRealtimeAdapter implements Realti
             throw new Error("RealtimeReverbAdapter requires options.key.");
         }
 
-        // Configurar Pusher globalmente
         (globalThis as { Pusher?: typeof Pusher }).Pusher = Pusher;
 
         const { key, wsHost, wsPort, wssPort, forceTLS, enabledTransports, authEndpoint, auth } = config.options;
@@ -223,7 +220,6 @@ export class RealtimeReverbAdapter extends BaseRealtimeAdapter implements Realti
             },
         });
 
-        // Configurar el conector específico si es necesario
         if (this.echo.connector) {
             this.setupConnector(this.echo.connector);
         }
@@ -233,7 +229,6 @@ export class RealtimeReverbAdapter extends BaseRealtimeAdapter implements Realti
     }
 
     private setupConnector(connector: any) {
-        // Configurar opciones adicionales del conector si es necesario
         if (connector.options) {
             connector.options = {
                 ...connector.options,
@@ -249,7 +244,6 @@ export class RealtimeReverbAdapter extends BaseRealtimeAdapter implements Realti
         const pusher = this.echo.connector.pusher;
         if (!pusher) return;
 
-        // Eventos de conexión de Pusher
         pusher.connection.bind("connected", () => {
             console.log("Reverb connected");
             this.markConnected(true);
@@ -352,7 +346,6 @@ export class RealtimeReverbAdapter extends BaseRealtimeAdapter implements Realti
             subscription.listeners.delete(eventName);
         }
 
-        // Limpiar canal si no tiene más listeners
         if (subscription.listeners.size === 0) {
             if (this.echo.leave) {
                 this.echo.leave(channel);
@@ -380,7 +373,6 @@ export class RealtimeReverbAdapter extends BaseRealtimeAdapter implements Realti
                 break;
         }
 
-        // Verificar errores de autorización para canales privados
         if (channelType !== "public") {
             channelInstance.error((error: any) => {
                 console.error(`Authorization error for channel ${channel}:`, error);
@@ -395,13 +387,11 @@ export class RealtimeReverbAdapter extends BaseRealtimeAdapter implements Realti
 
     private normalizePayload<TRecord>(raw: unknown): { record: TRecord; oldRecord?: any } {
         try {
-            // Si es string, parsear JSON
             if (typeof raw === "string") {
                 const parsed = JSON.parse(raw);
                 return this.extractRecordFromPayload<TRecord>(parsed);
             }
 
-            // Si es objeto con data, extraer data
             if (raw && typeof raw === "object") {
                 const obj = raw as Record<string, unknown>;
 
@@ -425,9 +415,7 @@ export class RealtimeReverbAdapter extends BaseRealtimeAdapter implements Realti
     }
 
     private extractRecordFromPayload<TRecord>(payload: any): { record: TRecord; oldRecord?: any } {
-        // Manejar formato de Laravel Reverb
         if (payload && typeof payload === "object") {
-            // Si tiene estructura de evento de Laravel
             if ("record" in payload) {
                 return {
                     record: payload.record as TRecord,
@@ -435,7 +423,6 @@ export class RealtimeReverbAdapter extends BaseRealtimeAdapter implements Realti
                 };
             }
 
-            // Si el payload directamente es el registro
             return { record: payload as TRecord };
         }
 
@@ -451,7 +438,6 @@ export class RealtimeReverbAdapter extends BaseRealtimeAdapter implements Realti
             }
 
             if (payload && typeof payload === "object") {
-                // Buscar indicadores del tipo de evento
                 if (payload.event_type) return payload.event_type;
                 if (payload.type) return payload.type;
                 if (payload.action) {

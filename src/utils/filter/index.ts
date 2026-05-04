@@ -1,4 +1,4 @@
-import {QueryFilter, SortCondition} from "@/data";
+import {QueryFilter, SortCondition} from "../../data";
 
 
 export const normalizeFilterValue = (operator: string, value: any): any => {
@@ -56,17 +56,28 @@ export const renderIncludeTree = (tree: Record<string, any>): string => {
 
 // 🧠 Función recursiva para aplicar filtros incluyendo OR/AND
 export const applyFilters = (query: any, filters: QueryFilter): any => {
-    if ('AND' in filters) {
-        filters?.AND?.forEach((subfilter) => {
+    const { AND, OR, ...directFilters } = filters;
+
+    if (AND) {
+        AND.forEach((subfilter) => {
             query = applyFilters(query, subfilter);
         });
-        return query;
     }
 
-    if ('OR' in filters) {
+    for (const [field, condition] of Object.entries(directFilters)) {
+        if (typeof condition === 'object' && 'operator' in condition && 'value' in condition) {
+            const operator = condition.operator;
+            const value = normalizeFilterValue(operator, condition.value);
+            query = query.filter(field, operator, value);
+        } else {
+            query = query.eq(field, condition);
+        }
+    }
+
+    if (OR) {
         const orExpressions: string[] = [];
 
-        filters?.OR?.forEach((subfilter) => {
+        OR.forEach((subfilter) => {
             if (typeof subfilter !== 'object') return;
 
             for (const [field, condition] of Object.entries(subfilter)) {
@@ -81,18 +92,6 @@ export const applyFilters = (query: any, filters: QueryFilter): any => {
         });
 
         query = query.or(orExpressions.join(','));
-        return query;
-    }
-
-    // Filtros normales
-    for (const [field, condition] of Object.entries(filters)) {
-        if (typeof condition === 'object' && 'operator' in condition && 'value' in condition) {
-            const operator = condition.operator;
-            const value = normalizeFilterValue(operator, condition.value);
-            query = query.filter(field, operator, value);
-        } else {
-            query = query.eq(field, condition);
-        }
     }
 
     return query;

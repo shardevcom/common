@@ -1,6 +1,6 @@
 import React, { ReactNode} from "react";
-import {PermissionAdapter} from "@/auth";
-import {AuthContext} from "@/auth";
+import {PermissionAdapter} from "../types";
+import {AuthContext} from "../context";
 
 
 interface AuthProviderProps {

@@ -1,5 +1,5 @@
 import {createContext} from "react";
-import {DataAdapter} from "@/data";
+import {DataAdapter} from "../types";
 
 interface DataContextProps {
     adapter: DataAdapter;

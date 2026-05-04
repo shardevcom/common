@@ -1,29 +1,29 @@
 import React, { ComponentType, ReactNode } from 'react';
 import { Middleware, ReducersMapObject } from '@reduxjs/toolkit';
-import { useSafeContext } from "@/utils";
+import { useSafeContext } from "../../utils";
 import {
     StateFromReducersMapObject,
     StoreConfig,
     StoreContext,
     StoreProvider
-} from "@/store";
+} from "../../store";
 
 export type AppOption =
     | ComponentType<any>
     | (() => ReactNode)
     | ((params: { props?: Record<string, any> }) => ReactNode);
 
-export interface SetupOptions<TSlices> {
+export interface SetupOptions<TSlices extends ReducersMapObject> {
     name: string;
     app: AppOption;
     appKey?: string;
-    slices?: ReducersMapObject<TSlices>;
+    slices?: TSlices;
     middlewares?: Middleware[];
-    initialState?: Partial<StateFromReducersMapObject<ReducersMapObject<TSlices>>>;
+    initialState?: Partial<StateFromReducersMapObject<TSlices>>;
     props?: Record<string, any>;
 }
 
-export function createApp<TSlices>({
+export function createApp<TSlices extends ReducersMapObject>({
                                        name,
                                        app,
                                        appKey = 'my-key-app',

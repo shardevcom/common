@@ -1,6 +1,6 @@
-import {useStoreContext} from "@/store";
-import {DataRestAdapter} from "@/adapters";
-import { DataAdapterConfig } from "@/data";
+import {useStoreContext} from "../../../store";
+import {DataRestAdapter} from "../../../adapters";
+import { DataAdapterConfig } from "../../types";
 import {useMemo} from "react";
 
 export const useRestApiAdapter = (config: DataAdapterConfig) => {

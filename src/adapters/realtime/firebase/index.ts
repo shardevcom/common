@@ -16,7 +16,7 @@ import {
     RealtimeEvent,
     RealtimeFilter,
     RealtimeSubscription
-} from "@/realtime";
+} from "../../../realtime";
 
 export class RealtimeFirebaseAdapter extends BaseRealtimeAdapter implements RealtimeAdapter {
     private app: FirebaseApp;

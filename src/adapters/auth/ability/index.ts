@@ -1,10 +1,9 @@
 import { AbilityBuilder, PureAbility } from '@casl/ability';
-import { AuthUser, BasePermissionAdapter } from "@/auth";
+import { AuthUser, BasePermissionAdapter } from "../../../auth";
 
 export class AuthAbilityAdapter<T extends AuthUser> extends BasePermissionAdapter<T> {
     private ability: PureAbility<[string, string]>;
 
-    // 1. Acciones por defecto (Estáticas)
     public static defaultActions = ['view', 'create', 'update', 'remove', 'manage', 'delete', 'edit'];
 
     constructor(
@@ -19,12 +18,10 @@ export class AuthAbilityAdapter<T extends AuthUser> extends BasePermissionAdapte
     private defineAbility(auth: any, guard?: string) {
         const { can, build } = new AbilityBuilder(PureAbility<[string, string]>);
 
-        // Combinar las acciones por defecto con las extras pasadas al constructor
-        // También podemos intentar extraer acciones dinámicas del objeto auth si existieran
         const knownActions = [
             ...AuthAbilityAdapter.defaultActions,
-            ...(this?.availableActions || []), // Acciones adicionales pasadas al constructor
-            ...(auth?.availableActions || []) // Opcional: acciones que vengan del backend
+            ...(this?.availableActions || []),
+            ...(auth?.availableActions || [])
         ];
 
         const addPermission = (permission: any) => {
@@ -47,7 +44,6 @@ export class AuthAbilityAdapter<T extends AuthUser> extends BasePermissionAdapte
             }
         };
 
-        // --- Lógica de Roles y Super Admin ---
         if (auth?.roles) {
             const isSuperAdmin = auth.roles.some(
                 (role: any) => (role.name === 'Super Admin' || role.name === 'admin') && role.guard_name === guard
@@ -66,7 +62,6 @@ export class AuthAbilityAdapter<T extends AuthUser> extends BasePermissionAdapte
             }
         }
 
-        // --- Permisos Directos ---
         if (auth?.permissions?.length > 0) {
             auth.permissions.forEach((permission: any) => {
                 if (permission.guard_name === guard) {

@@ -15,12 +15,11 @@ import {
     DataProviderResponse,
     FileType,
     QueryFilter,
-    SortCondition,
     StorageConfig
-} from "@/data";
+} from "../../../data";
 
-import { AuthUser, Role } from "@/auth";
-import { buildQuery } from "@/utils/filter";
+import { AuthUser } from "../../../auth";
+import { buildQuery } from "../../../utils";
 
 export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter {
     private client: SupabaseClient;
@@ -57,10 +56,6 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
         });
     }
 
-    // =============================
-    // 🛡️ Helpers
-    // =============================
-
     private getAuthToken(): string | undefined {
         return this.store?.getState()?.auth?.authUser?.access_token;
     }
@@ -77,7 +72,6 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
         if (!err || typeof err !== 'object') return false;
 
         const e = err as any;
-
         const message = typeof e.message === 'string' ? e.message.toLowerCase() : '';
 
         return (
@@ -136,10 +130,6 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
         }
     }
 
-    // =============================
-    // 📊 CRUD
-    // =============================
-
     async fetch<T>(resource: string, params?: any) {
         return this.handle<T>((c) => buildQuery(c, resource, params));
     }
@@ -173,9 +163,7 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
     async insert<T, P = T>(resource: string, data: Partial<P>) {
         return this.handle<T>(async (c) => {
             const payload = (Array.isArray(data) ? data : [data]) as P[];
-
             const q =  c.from(resource).insert(payload).select();
-
             return Array.isArray(data) ? q : q.single();
         });
     }
@@ -186,8 +174,7 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
         data: Partial<P>
     ) {
         return this.handle<T>(async (c) => {
-
-            const payload =  this.toSupabasePayload<P[]>(
+            const payload = this.toSupabasePayload<P[]>(
                 Array.isArray(data) ? data : [data]
             );
 
@@ -246,10 +233,6 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
         });
     }
 
-    // =============================
-    // 📁 Storage
-    // =============================
-
     async upload<T>(resource: string, params: {
         file: FileType;
         metadata?: Record<string, unknown>;
@@ -257,7 +240,6 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
     }) {
         return this.handle<T>(async (c) => {
             const files = Array.isArray(params.file) ? params.file : [params.file];
-
             const results = [];
 
             for (const file of files) {
@@ -286,10 +268,6 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
         });
     }
 
-    // =============================
-    // 🔐 AUTH
-    // =============================
-
     async signIn<T extends AuthUser>(credentials: unknown) {
         const { data, error } =
             await this.client.auth.signInWithPassword(
@@ -309,10 +287,6 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
 
         return this.createResponse(null, error);
     }
-
-    // =============================
-    // 📡 Realtime
-    // =============================
 
     subscribe<T>(resource: string, cb: (data: T) => void) {
         this.subscriptions[resource] = this.client

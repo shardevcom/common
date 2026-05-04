@@ -6,8 +6,8 @@ import {
     ProcessApiResponse,
     QueryFilter,
     SortCondition,
-} from "@/data";
-import { useData } from "@/data/hooks";
+} from "../../types";
+import { useData } from "../data";
 
 export interface PaginationState {
     page: number;

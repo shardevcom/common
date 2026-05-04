@@ -1,5 +1,5 @@
 import {useContext, useMemo} from "react";
-import {DataContext} from "@/data";
+import { DataContext } from "../../context";
 
 export const useData = () => {
     const context = useContext(DataContext);
