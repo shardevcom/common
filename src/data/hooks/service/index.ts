@@ -223,17 +223,64 @@ export function useResourceService<
      * =====================================
      */
 
-    const stopLoading = useCallback(() => {
-        setState((prev) => ({
-            ...prev,
-            isLoading: false,
-            isFetching: false,
-            isSaving: false,
-            isDeleting: false,
-            isImporting: false,
-            isExporting: false,
-        }));
-    }, []);
+    const stopLoading = useCallback(
+        (
+            type?:
+                | "fetch"
+                | "save"
+                | "delete"
+                | "import"
+                | "export"
+                | "generic"
+        ) => {
+            setState((prev) => {
+                const next = {
+                    ...prev,
+                };
+
+                if (!type || type === "generic") {
+                    next.isLoading = false;
+                    next.isFetching = false;
+                    next.isSaving = false;
+                    next.isDeleting = false;
+                    next.isImporting = false;
+                    next.isExporting = false;
+
+                    return next;
+                }
+
+                if (type === "fetch") {
+                    next.isFetching = false;
+                }
+
+                if (type === "save") {
+                    next.isSaving = false;
+                }
+
+                if (type === "delete") {
+                    next.isDeleting = false;
+                }
+
+                if (type === "import") {
+                    next.isImporting = false;
+                }
+
+                if (type === "export") {
+                    next.isExporting = false;
+                }
+
+                next.isLoading =
+                    next.isFetching ||
+                    next.isSaving ||
+                    next.isDeleting ||
+                    next.isImporting ||
+                    next.isExporting;
+
+                return next;
+            });
+        },
+        []
+    );
 
     /**
      * =====================================
@@ -243,8 +290,13 @@ export function useResourceService<
 
     const handleError = useCallback(
         <R>(
-            error: any
+            error: any,
+            requestId?: number
         ): DataProviderResponse<R, E> => {
+
+            if ( requestId && requestId !== requestIdRef.current ) {
+                return error;
+            }
 
             const processed =
                 ProcessApiResponse<R>(
@@ -414,12 +466,15 @@ export function useResourceService<
                         error: null,
                     }));
                 } else {
-                    handleError(processed);
+                    handleError(processed, requestId);
                 }
-
                 return processed;
             } catch (err) {
                 return handleError(err);
+            } finally {
+                if ( requestId === requestIdRef.current ) {
+                    stopLoading("fetch");
+                }
             }
         },
         [
@@ -437,12 +492,10 @@ export function useResourceService<
      */
 
     const execute = useCallback(
-        async <K extends keyof DataAdapter>(
-            method: K,
-            ...args: Parameters<
-                NonNullable<DataAdapter[K]>
-            >
-        ) => {
+        async <R = any>(
+            method: keyof DataAdapter,
+            ...args: any[]
+        ): Promise<DataProviderResponse<R, E>> => {
             const fn = adapter[method];
 
             if (typeof fn !== "function") {
@@ -465,7 +518,7 @@ export function useResourceService<
                         response
                     ) as DataProviderResponse<any, E>;
 
-                stopLoading();
+                stopLoading("generic");
 
                 return processed;
             } catch (err) {
@@ -530,7 +583,7 @@ export function useResourceService<
             } catch (err) {
                 return handleError(err);
             } finally {
-                stopLoading();
+                stopLoading("save");
             }
         },
         [
@@ -606,7 +659,7 @@ export function useResourceService<
             } catch (err) {
                 return handleError(err);
             } finally {
-                stopLoading();
+                stopLoading("save");
             }
         },
         [
@@ -678,7 +731,7 @@ export function useResourceService<
             } catch (err) {
                 return handleError(err);
             } finally {
-                stopLoading();
+                stopLoading("save");
             }
         },
         [
@@ -740,7 +793,7 @@ export function useResourceService<
             } catch (err) {
                 return handleError(err);
             } finally {
-                stopLoading();
+                stopLoading("delete");
             }
         },
         [
@@ -804,7 +857,7 @@ export function useResourceService<
             } catch (err) {
                 return handleError(err);
             } finally {
-                stopLoading();
+                stopLoading("delete");
             }
         },
         [
@@ -855,7 +908,7 @@ export function useResourceService<
             } catch (err) {
                 return handleError(err);
             } finally {
-                stopLoading();
+                stopLoading("save");
             }
         },
         [
@@ -926,7 +979,7 @@ export function useResourceService<
             } catch (err) {
                 return handleError(err);
             } finally {
-                stopLoading();
+                stopLoading("import");
             }
         },
         [
@@ -966,7 +1019,7 @@ export function useResourceService<
             } catch (err) {
                 return handleError(err);
             } finally {
-                stopLoading();
+                stopLoading("export");
             }
         },
         [
@@ -1051,8 +1104,9 @@ export function useResourceService<
      */
 
     useEffect(() => {
-        if (options?.autoFetch === false)
+        if (options?.autoFetch === false) {
             return;
+        }
 
         fetchMany();
     }, [
@@ -1062,6 +1116,8 @@ export function useResourceService<
         state.search,
         state.filter,
         state.sort,
+        fetchMany,
+        options?.autoFetch,
     ]);
 
     /**
