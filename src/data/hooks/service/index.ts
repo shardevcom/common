@@ -242,13 +242,14 @@ export function useResourceService<
      */
 
     const handleError = useCallback(
-        (error: any) => {
+        <R>(
+            error: any
+        ): DataProviderResponse<R, E> => {
+
             const processed =
-                ProcessApiResponse<any>(
+                ProcessApiResponse<R>(
                     error
-                ) as DataProviderResponse<any> & {
-                    errors?: E;
-                };
+                ) as DataProviderResponse<R, E>;
 
             setState((prev) => ({
                 ...prev,
@@ -372,16 +373,10 @@ export function useResourceService<
                     return null;
                 }
 
-                const processed =
+                const processed: DataProviderResponse< PaginatedData<T>,E> =
                     ProcessApiResponse<
                         PaginatedData<T>
-                    >(
-                        response
-                    ) as DataProviderResponse<
-                        PaginatedData<T>
-                    > & {
-                        errors?: E;
-                    };
+                    >(response) as DataProviderResponse<PaginatedData<T>,E>;
 
                 if (
                     processed.success &&
@@ -465,10 +460,10 @@ export function useResourceService<
                     fn as any
                 )(resource, ...args);
 
-                const processed =
+                const processed: DataProviderResponse<any, E> =
                     ProcessApiResponse<any>(
                         response
-                    );
+                    ) as DataProviderResponse<any, E>;
 
                 stopLoading();
 
@@ -512,10 +507,10 @@ export function useResourceService<
                         data
                     );
 
-                const processed =
+                const processed: DataProviderResponse<T, E> =
                     ProcessApiResponse<T>(
                         response
-                    );
+                    ) as DataProviderResponse<T, E>;
 
                 if (
                     processed.success &&
@@ -598,10 +593,10 @@ export function useResourceService<
                         payload
                     );
 
-                const processed =
+                const processed: DataProviderResponse<TResponseData, E> =
                     ProcessApiResponse<TResponseData>(
                         response
-                    );
+                    ) as DataProviderResponse<TResponseData, E>;
 
                 if (processed.success) {
                     await fetchMany();
@@ -654,10 +649,10 @@ export function useResourceService<
                         data
                     );
 
-                const processed =
+                const processed: DataProviderResponse<T, E> =
                     ProcessApiResponse<T>(
                         response
-                    );
+                    ) as DataProviderResponse<T, E>;
 
                 if (
                     processed.success &&
@@ -721,10 +716,10 @@ export function useResourceService<
                         {id}
                     );
 
-                const processed =
-                    ProcessApiResponse(
+                const processed: DataProviderResponse<T, E> =
+                    ProcessApiResponse<T>(
                         response
-                    );
+                    ) as DataProviderResponse<T, E>;
 
                 if (processed.success) {
                     setState((prev) => ({
@@ -785,10 +780,10 @@ export function useResourceService<
                         {ids}
                     );
 
-                const processed =
-                    ProcessApiResponse(
+                const processed: DataProviderResponse<any, E> =
+                    ProcessApiResponse<any>(
                         response
-                    );
+                    ) as DataProviderResponse<any, E>;
 
                 if (processed.success) {
                     setState((prev) => ({
@@ -847,10 +842,10 @@ export function useResourceService<
                         items
                     );
 
-                const processed =
+                const processed: DataProviderResponse<T[], E> =
                     ProcessApiResponse<T[]>(
                         response
-                    );
+                    ) as DataProviderResponse<T[], E>;
 
                 if (processed.success) {
                     await fetchMany();
@@ -916,14 +911,12 @@ export function useResourceService<
                 }
 
                 const response =
-                    await adapter.uploadFile<
-                        T[]
-                    >(resource, formData);
+                    await adapter.uploadFile<T[]>(resource, formData);
 
-                const processed =
+                const processed: DataProviderResponse<T[], E> =
                     ProcessApiResponse<T[]>(
                         response
-                    );
+                    ) as DataProviderResponse<T[], E>;
 
                 if (processed.success) {
                     await fetchMany();
