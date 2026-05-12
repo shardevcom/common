@@ -294,8 +294,12 @@ export function useResourceService<
             requestId?: number
         ): DataProviderResponse<R, E> => {
 
-            if ( requestId && requestId !== requestIdRef.current ) {
-                return error;
+            if (
+                requestId &&
+                requestId !==
+                requestIdRef.current
+            ) {
+                return error as DataProviderResponse<R, E>;
             }
 
             const processed =
@@ -361,7 +365,7 @@ export function useResourceService<
      */
 
     const fetchMany = useCallback(
-        async (params?: FetchManyParams) => {
+        async (params?: FetchManyParams): Promise<DataProviderResponse<PaginatedData<T>, E> | null> => {
             if (
                 typeof adapter.fetchMany !==
                 "function"
@@ -492,10 +496,17 @@ export function useResourceService<
      */
 
     const execute = useCallback(
-        async <R = any>(
-            method: keyof DataAdapter,
-            ...args: any[]
-        ): Promise<DataProviderResponse<R, E>> => {
+        async <
+            TResult = any,
+            K extends keyof DataAdapter = keyof DataAdapter
+        >(
+            method: K,
+            ...args: Parameters<
+                NonNullable<DataAdapter[K]>
+            >
+        ): Promise<
+            DataProviderResponse<TResult, E>
+        > => {
             const fn = adapter[method];
 
             if (typeof fn !== "function") {
@@ -541,7 +552,7 @@ export function useResourceService<
      */
 
     const add = useCallback(
-        async (data: Partial<T>) => {
+        async (data: Partial<T>): Promise<DataProviderResponse<T, E>> => {
             if (
                 typeof adapter.insert !==
                 "function"
@@ -612,7 +623,7 @@ export function useResourceService<
                 string,
                 ...string[]
             ]
-        ) => {
+        ): Promise<DataProviderResponse<TResponseData, E>> => {
             if (
                 typeof adapter.upsert !==
                 "function"
@@ -682,7 +693,7 @@ export function useResourceService<
         async (
             id: string | number,
             data: Partial<T>
-        ) => {
+        ): Promise<DataProviderResponse<T, E>> => {
             if (
                 typeof adapter.modify !==
                 "function"
@@ -750,7 +761,7 @@ export function useResourceService<
      */
 
     const remove = useCallback(
-        async (id: string | number) => {
+        async (id: string | number): Promise<DataProviderResponse<T, E>> => {
             if (
                 typeof adapter.remove !==
                 "function"
@@ -814,7 +825,7 @@ export function useResourceService<
     const deleteMany = useCallback(
         async (
             ids: Array<string | number>
-        ) => {
+        ): Promise<DataProviderResponse<T[], E>> => {
             if (
                 typeof adapter.removeMany !==
                 "function"
@@ -876,7 +887,7 @@ export function useResourceService<
      */
 
     const updateMany = useCallback(
-        async (items: Partial<T>[]) => {
+        async (items: Partial<T>[]): Promise<DataProviderResponse<T[], E>> => {
             if (
                 typeof adapter.modifyMany !==
                 "function"
@@ -931,7 +942,7 @@ export function useResourceService<
         async (
             file: File,
             extra?: Record<string, any>
-        ) => {
+        ): Promise<DataProviderResponse<T[], E>> => {
             if (
                 typeof adapter.uploadFile !==
                 "function"
@@ -999,7 +1010,7 @@ export function useResourceService<
      */
 
     const exportToFile = useCallback(
-        async (params?: ExportParams) => {
+        async (params?: ExportParams): Promise<any> => {
             if (
                 typeof adapter.downloadFile !==
                 "function"
