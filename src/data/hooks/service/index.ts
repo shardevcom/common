@@ -1,10 +1,4 @@
-import {
-    useCallback,
-    useEffect,
-    useMemo,
-    useRef,
-    useState,
-} from "react";
+import {useCallback, useEffect, useMemo, useRef, useState,} from "react";
 
 import {
     DataAdapter,
@@ -15,13 +9,25 @@ import {
     SortCondition,
 } from "../../types";
 
-import { useData } from "../data";
+import {useData} from "../data";
+
+/**
+ * =====================================
+ * PAGINATION
+ * =====================================
+ */
 
 export interface PaginationState {
     page: number;
     perPage: number;
     total: number;
 }
+
+/**
+ * =====================================
+ * STATE
+ * =====================================
+ */
 
 export interface EntityServiceState<
     T,
@@ -37,10 +43,18 @@ export interface EntityServiceState<
     isFetching: boolean;
     isSaving: boolean;
     isDeleting: boolean;
+    isImporting: boolean;
+    isExporting: boolean;
     initialized: boolean;
     lastUpdatedAt?: number;
     error?: E | null;
 }
+
+/**
+ * =====================================
+ * FETCH PARAMS
+ * =====================================
+ */
 
 interface FetchManyParams {
     page?: number;
@@ -50,6 +64,24 @@ interface FetchManyParams {
     search?: string;
     include?: string | string[];
 }
+
+/**
+ * =====================================
+ * EXPORT PARAMS
+ * =====================================
+ */
+
+interface ExportParams {
+    format?: "csv" | "xlsx" | "json";
+    filter?: Record<string, any>;
+    sort?: Record<string, "asc" | "desc">;
+}
+
+/**
+ * =====================================
+ * HOOK
+ * =====================================
+ */
 
 export function useResourceService<
     T extends { id?: string | number } = any,
@@ -64,10 +96,44 @@ export function useResourceService<
         autoFetch?: boolean;
     }
 ) {
+    /**
+     * =====================================
+     * ADAPTER
+     * =====================================
+     */
+
     const adapter: DataAdapter = useData();
+
+    /**
+     * =====================================
+     * REFS
+     * =====================================
+     */
+
     const requestIdRef = useRef(0);
-    const [refreshKey, setRefreshKey] = useState(0);
-    const [state, setState] = useState<EntityServiceState<T, E>>({
+
+    const stateRef = useRef<
+        EntityServiceState<T, E>
+    >(null as any);
+
+    /**
+     * =====================================
+     * INTERNAL
+     * =====================================
+     */
+
+    const [refreshKey, setRefreshKey] =
+        useState(0);
+
+    /**
+     * =====================================
+     * STATE
+     * =====================================
+     */
+
+    const [state, setState] = useState<
+        EntityServiceState<T, E>
+    >({
         items: [],
         pagination: {
             page: 1,
@@ -82,6 +148,8 @@ export function useResourceService<
         isFetching: false,
         isSaving: false,
         isDeleting: false,
+        isImporting: false,
+        isExporting: false,
         initialized: false,
         lastUpdatedAt: undefined,
         error: null,
@@ -89,11 +157,9 @@ export function useResourceService<
 
     /**
      * =====================================
-     * STATE REF
+     * SYNC STATE REF
      * =====================================
      */
-
-    const stateRef = useRef(state);
 
     useEffect(() => {
         stateRef.current = state;
@@ -101,7 +167,7 @@ export function useResourceService<
 
     /**
      * =====================================
-     * HELPERS
+     * START LOADING
      * =====================================
      */
 
@@ -111,6 +177,8 @@ export function useResourceService<
                 | "fetch"
                 | "save"
                 | "delete"
+                | "import"
+                | "export"
                 | "generic" = "generic"
         ) => {
             setState((prev) => ({
@@ -133,11 +201,27 @@ export function useResourceService<
                         ? true
                         : prev.isDeleting,
 
+                isImporting:
+                    type === "import"
+                        ? true
+                        : prev.isImporting,
+
+                isExporting:
+                    type === "export"
+                        ? true
+                        : prev.isExporting,
+
                 error: null,
             }));
         },
         []
     );
+
+    /**
+     * =====================================
+     * STOP LOADING
+     * =====================================
+     */
 
     const stopLoading = useCallback(() => {
         setState((prev) => ({
@@ -146,8 +230,16 @@ export function useResourceService<
             isFetching: false,
             isSaving: false,
             isDeleting: false,
+            isImporting: false,
+            isExporting: false,
         }));
     }, []);
+
+    /**
+     * =====================================
+     * HANDLE ERROR
+     * =====================================
+     */
 
     const handleError = useCallback(
         (error: any) => {
@@ -164,6 +256,8 @@ export function useResourceService<
                 isFetching: false,
                 isSaving: false,
                 isDeleting: false,
+                isImporting: false,
+                isExporting: false,
                 error:
                     processed.errors ??
                     (error as E) ??
@@ -182,7 +276,29 @@ export function useResourceService<
      */
 
     const refresh = useCallback(() => {
-        setRefreshKey((p) => p + 1);
+        setRefreshKey((prev) => prev + 1);
+    }, []);
+
+    /**
+     * =====================================
+     * RESET
+     * =====================================
+     */
+
+    const reset = useCallback(() => {
+        setState((prev) => ({
+            ...prev,
+
+            items: [],
+
+            pagination: {
+                ...prev.pagination,
+                page: 1,
+                total: 0,
+            },
+
+            error: null,
+        }));
     }, []);
 
     /**
@@ -202,12 +318,14 @@ export function useResourceService<
                 );
             }
 
-            const requestId = ++requestIdRef.current;
+            const requestId =
+                ++requestIdRef.current;
 
             startLoading("fetch");
 
             try {
-                const current = stateRef.current;
+                const current =
+                    stateRef.current;
 
                 const page =
                     params?.page ??
@@ -244,11 +362,12 @@ export function useResourceService<
                     });
 
                 /**
-                 * Ignorar respuestas viejas
+                 * IGNORAR RESPUESTAS VIEJAS
                  */
 
                 if (
-                    requestId !== requestIdRef.current
+                    requestId !==
+                    requestIdRef.current
                 ) {
                     return null;
                 }
@@ -272,30 +391,32 @@ export function useResourceService<
                         ...prev,
 
                         items:
-                            processed.data?.data ??
-                            [],
+                            processed.data
+                                ?.data ?? [],
 
                         pagination: {
                             page:
-                                processed.data
+                                processed
+                                    .data
                                     ?.current_page ??
                                 page,
 
                             perPage:
-                                processed.data
+                                processed
+                                    .data
                                     ?.per_page ??
                                 perPage,
 
                             total:
-                                processed.data
+                                processed
+                                    .data
                                     ?.total ?? 0,
                         },
                         initialized: true,
+                        lastUpdatedAt: Date.now(),
                         isLoading: false,
                         isFetching: false,
                         error: null,
-                        lastUpdatedAt:
-                            Date.now(),
                     }));
                 } else {
                     handleError(processed);
@@ -304,22 +425,19 @@ export function useResourceService<
                 return processed;
             } catch (err) {
                 return handleError(err);
-            } finally {
-                stopLoading();
             }
         },
         [
             adapter,
             resource,
             startLoading,
-            stopLoading,
             handleError,
         ]
     );
 
     /**
      * =====================================
-     * GENERIC EXECUTOR
+     * EXECUTE
      * =====================================
      */
 
@@ -405,11 +523,11 @@ export function useResourceService<
                 ) {
                     setState((prev) => ({
                         ...prev,
-
                         items: [
                             processed.data as T,
                             ...prev.items,
                         ],
+                        lastUpdatedAt: Date.now(),
                     }));
                 }
 
@@ -423,6 +541,83 @@ export function useResourceService<
         [
             adapter,
             resource,
+            startLoading,
+            stopLoading,
+            handleError,
+        ]
+    );
+
+
+    /**
+     * =====================================
+     * UPSERT
+     * =====================================
+     */
+
+    const upsert = useCallback(
+        async <
+            TResponseData = any,
+            TParams = TResponseData
+        >(
+            data: Partial<TParams>[],
+            uniqueFields: [
+                string,
+                ...string[]
+            ]
+        ) => {
+            if (
+                typeof adapter.upsert !==
+                "function"
+            ) {
+                throw new Error(
+                    "El adapter no implementa upsert"
+                );
+            }
+
+            startLoading("save");
+
+            try {
+                const payload: Record<
+                    string,
+                    any
+                > = {
+                    _uniqueFields:
+                    uniqueFields,
+                };
+
+                data.forEach((item, index) => {
+                    payload[index] = item;
+                });
+
+                const response =
+                    await adapter.upsert<
+                        TResponseData,
+                        typeof payload
+                    >(
+                        resource,
+                        payload
+                    );
+
+                const processed =
+                    ProcessApiResponse<TResponseData>(
+                        response
+                    );
+
+                if (processed.success) {
+                    await fetchMany();
+                }
+
+                return processed;
+            } catch (err) {
+                return handleError(err);
+            } finally {
+                stopLoading();
+            }
+        },
+        [
+            adapter,
+            resource,
+            fetchMany,
             startLoading,
             stopLoading,
             handleError,
@@ -455,7 +650,7 @@ export function useResourceService<
                 const response =
                     await adapter.modify<T>(
                         resource,
-                        { id },
+                        {id},
                         data
                     );
 
@@ -480,6 +675,7 @@ export function useResourceService<
                                     }
                                     : item
                         ),
+                        lastUpdatedAt: Date.now(),
                     }));
                 }
 
@@ -522,7 +718,7 @@ export function useResourceService<
                 const response =
                     await adapter.remove(
                         resource,
-                        { id }
+                        {id}
                     );
 
                 const processed =
@@ -533,16 +729,247 @@ export function useResourceService<
                 if (processed.success) {
                     setState((prev) => ({
                         ...prev,
-
-                        items: prev.items.filter(
-                            (item) =>
-                                String(item.id) !==
-                                String(id)
-                        ),
+                        items:
+                            prev.items.filter(
+                                (item) =>
+                                    String(
+                                        item.id
+                                    ) !==
+                                    String(id)
+                            ),
+                        lastUpdatedAt: Date.now(),
                     }));
                 }
 
                 return processed;
+            } catch (err) {
+                return handleError(err);
+            } finally {
+                stopLoading();
+            }
+        },
+        [
+            adapter,
+            resource,
+            startLoading,
+            stopLoading,
+            handleError,
+        ]
+    );
+
+    /**
+     * =====================================
+     * DELETE MANY
+     * =====================================
+     */
+
+    const deleteMany = useCallback(
+        async (
+            ids: Array<string | number>
+        ) => {
+            if (
+                typeof adapter.removeMany !==
+                "function"
+            ) {
+                throw new Error(
+                    "El adapter no implementa removeMany"
+                );
+            }
+
+            startLoading("delete");
+
+            try {
+                const response =
+                    await adapter.removeMany(
+                        resource,
+                        {ids}
+                    );
+
+                const processed =
+                    ProcessApiResponse(
+                        response
+                    );
+
+                if (processed.success) {
+                    setState((prev) => ({
+                        ...prev,
+                        items:
+                            prev.items.filter(
+                                (item) =>
+                                    !ids.includes(
+                                        item.id as any
+                                    )
+                            ),
+
+                        lastUpdatedAt: Date.now(),
+                    }));
+                }
+
+                return processed;
+            } catch (err) {
+                return handleError(err);
+            } finally {
+                stopLoading();
+            }
+        },
+        [
+            adapter,
+            resource,
+            startLoading,
+            stopLoading,
+            handleError,
+        ]
+    );
+
+    /**
+     * =====================================
+     * UPDATE MANY
+     * =====================================
+     */
+
+    const updateMany = useCallback(
+        async (items: Partial<T>[]) => {
+            if (
+                typeof adapter.modifyMany !==
+                "function"
+            ) {
+                throw new Error(
+                    "El adapter no implementa modifyMany"
+                );
+            }
+
+            startLoading("save");
+
+            try {
+                const response =
+                    await adapter.modifyMany<T>(
+                        resource,
+                        items
+                    );
+
+                const processed =
+                    ProcessApiResponse<T[]>(
+                        response
+                    );
+
+                if (processed.success) {
+                    await fetchMany();
+                }
+
+                return processed;
+            } catch (err) {
+                return handleError(err);
+            } finally {
+                stopLoading();
+            }
+        },
+        [
+            adapter,
+            resource,
+            fetchMany,
+            startLoading,
+            stopLoading,
+            handleError,
+        ]
+    );
+
+    /**
+     * =====================================
+     * IMPORT FILE
+     * =====================================
+     */
+
+    const importFromFile = useCallback(
+        async (
+            file: File,
+            extra?: Record<string, any>
+        ) => {
+            if (
+                typeof adapter.uploadFile !==
+                "function"
+            ) {
+                throw new Error(
+                    "El adapter no implementa uploadFile"
+                );
+            }
+
+            startLoading("import");
+
+            try {
+                const formData =
+                    new FormData();
+
+                formData.append(
+                    "file",
+                    file
+                );
+
+                if (extra) {
+                    Object.entries(
+                        extra
+                    ).forEach(([k, v]) => {
+                        formData.append(
+                            k,
+                            String(v)
+                        );
+                    });
+                }
+
+                const response =
+                    await adapter.uploadFile<
+                        T[]
+                    >(resource, formData);
+
+                const processed =
+                    ProcessApiResponse<T[]>(
+                        response
+                    );
+
+                if (processed.success) {
+                    await fetchMany();
+                }
+
+                return processed;
+            } catch (err) {
+                return handleError(err);
+            } finally {
+                stopLoading();
+            }
+        },
+        [
+            adapter,
+            resource,
+            fetchMany,
+            startLoading,
+            stopLoading,
+            handleError,
+        ]
+    );
+
+    /**
+     * =====================================
+     * EXPORT FILE
+     * =====================================
+     */
+
+    const exportToFile = useCallback(
+        async (params?: ExportParams) => {
+            if (
+                typeof adapter.downloadFile !==
+                "function"
+            ) {
+                throw new Error(
+                    "El adapter no implementa downloadFile"
+                );
+            }
+
+            startLoading("export");
+
+            try {
+                return await adapter.downloadFile(
+                    resource,
+                    params ?? {}
+                );
             } catch (err) {
                 return handleError(err);
             } finally {
@@ -568,7 +995,6 @@ export function useResourceService<
         (page: number) => {
             setState((prev) => ({
                 ...prev,
-
                 pagination: {
                     ...prev.pagination,
                     page,
@@ -582,7 +1008,6 @@ export function useResourceService<
         (perPage: number) => {
             setState((prev) => ({
                 ...prev,
-
                 pagination: {
                     ...prev.pagination,
                     perPage,
@@ -628,28 +1053,6 @@ export function useResourceService<
 
     /**
      * =====================================
-     * RESET
-     * =====================================
-     */
-
-    const reset = useCallback(() => {
-        setState((prev) => ({
-            ...prev,
-
-            items: [],
-
-            pagination: {
-                ...prev.pagination,
-                page: 1,
-                total: 0,
-            },
-
-            error: null,
-        }));
-    }, []);
-
-    /**
-     * =====================================
      * AUTO FETCH
      * =====================================
      */
@@ -681,8 +1084,13 @@ export function useResourceService<
             reset,
             fetchMany,
             add,
+            upsert,
             update,
             remove,
+            deleteMany,
+            updateMany,
+            importFromFile,
+            exportToFile,
             execute,
             setPage,
             setPerPage,
@@ -696,8 +1104,13 @@ export function useResourceService<
             reset,
             fetchMany,
             add,
+            upsert,
             update,
             remove,
+            deleteMany,
+            updateMany,
+            importFromFile,
+            exportToFile,
             execute,
         ]
     );
