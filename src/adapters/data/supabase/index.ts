@@ -5,7 +5,7 @@ import {
     SupabaseClient
 } from "@supabase/supabase-js";
 
-import { v4 as uuidv4 } from 'uuid';
+import {v4 as uuidv4} from 'uuid';
 import localStorage from "redux-persist/es/storage";
 
 import {
@@ -18,8 +18,8 @@ import {
     StorageConfig
 } from "../../../data";
 
-import { AuthUser } from "../../../auth";
-import { buildQuery } from "../../../utils";
+import {AuthUser} from "../../../auth";
+import {buildQuery} from "../../../utils";
 
 export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter {
     private client: SupabaseClient;
@@ -50,7 +50,7 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
             global: {
                 headers: {
                     'Content-Type': 'application/json',
-                    ...(authToken ? { Authorization: `Bearer ${authToken}` } : {})
+                    ...(authToken ? {Authorization: `Bearer ${authToken}`} : {})
                 }
             }
         });
@@ -61,11 +61,7 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
     }
 
     private async resetSession() {
-        this.store?.dispatch({ type: 'RESET_STATE' });
-    }
-
-    private toSupabasePayload<T>(data: unknown): T {
-        return data as T;
+        this.store?.dispatch({type: 'RESET_STATE'});
     }
 
     private isAuthError(err: unknown): boolean {
@@ -107,7 +103,7 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
 
     private async handle<T>(fn: (client: SupabaseClient) => Promise<any>) {
         try {
-            const { data, error, status } = await fn(this.client);
+            const {data, error, status} = await fn(this.client);
 
             if (error) {
                 if (this.isAuthError(error)) {
@@ -160,11 +156,25 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
         );
     }
 
-    async insert<T, P = T>(resource: string, data: Partial<P>) {
+    async insert<T, P = T>(
+        resource: string,
+        data: Partial<P>
+    ) {
         return this.handle<T>(async (c) => {
-            const payload = (Array.isArray(data) ? data : [data]) as P[];
-            const q =  c.from(resource).insert(payload).select();
-            return Array.isArray(data) ? q : q.single();
+            const payload = (
+                Array.isArray(data)
+                    ? data
+                    : [data]
+            ) as Record<string, unknown>[];
+
+            const q = c
+                .from(resource)
+                .insert(payload)
+                .select();
+
+            return Array.isArray(data)
+                ? q
+                : q.single();
         });
     }
 
@@ -174,9 +184,7 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
         data: Partial<P>
     ) {
         return this.handle<T>(async (c) => {
-            const payload = this.toSupabasePayload<P[]>(
-                Array.isArray(data) ? data : [data]
-            );
+            const payload = data as Record<string, unknown>;
 
             let q = c.from(resource).update(payload);
 
@@ -200,15 +208,22 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
         uniqueFields?: [string, ...string[]]
     ) {
         return this.handle<T>(async (c) => {
-            const payload = (Array.isArray(data) ? data : [data]) as P[];
+            const payload = (
+                Array.isArray(data)
+                    ? data
+                    : [data]
+            ) as Record<string, unknown>[];
 
-            const q = c.from(resource)
+            const q = c
+                .from(resource)
                 .upsert(payload, {
                     onConflict: uniqueFields?.join(',')
                 })
                 .select();
 
-            return Array.isArray(data) ? q : q.single();
+            return Array.isArray(data)
+                ? q
+                : q.single();
         });
     }
 
@@ -248,13 +263,13 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
                 const name = `${uuidv4()}.${file.name.split('.').pop()}`;
                 const path = `${resource}/${name}`;
 
-                const { error } = await c.storage
+                const {error} = await c.storage
                     .from(this.defaultStorage?.disk || 'default')
-                    .upload(path, file, { upsert: true });
+                    .upload(path, file, {upsert: true});
 
                 if (error) throw error;
 
-                const { data } = c.storage
+                const {data} = c.storage
                     .from(this.defaultStorage?.disk || 'default')
                     .getPublicUrl(path);
 
@@ -264,7 +279,7 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
                 });
             }
 
-            return { data: results, error: null, status: 200 };
+            return {data: results, error: null, status: 200};
         });
     }
 
@@ -275,14 +290,14 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
             );
 
         return this.createResponse<T>(
-            this.toSupabasePayload<T>(data),
+            data as unknown as T,
             error,
             error ? 401 : 200
         );
     }
 
     async signOut() {
-        const { error } = await this.client.auth.signOut();
+        const {error} = await this.client.auth.signOut();
         await this.resetSession();
 
         return this.createResponse(null, error);
@@ -312,7 +327,7 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
 
     async count<T = number>(resource: string, filter?: QueryFilter) {
         return this.handle<T>(async (c) => {
-            let q = c.from(resource).select('*', { count: 'exact', head: true });
+            let q = c.from(resource).select('*', {count: 'exact', head: true});
 
             if (filter) {
                 Object.entries(filter).forEach(([k, v]) => {
