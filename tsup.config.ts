@@ -22,6 +22,8 @@ export default defineConfig({
     external: [
         "react",
         "react-dom",
+        "react-redux",
+        "redux-persist",
         "firebase/app",
         "firebase/database",
         "react-router-dom",

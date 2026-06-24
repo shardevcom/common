@@ -1,6 +1,6 @@
 import { configureStore, combineReducers, ReducersMapObject, Reducer, UnknownAction } from '@reduxjs/toolkit';
 import { persistStore, persistReducer, PersistConfig } from 'redux-persist';
-import storage from 'redux-persist/lib/storage';
+import storageImport from 'redux-persist/lib/storage';
 import { createEncryptor } from './encryptor';
 import { authReducer} from "../slices/auth.slice";
 import { StateFromReducersMapObject, StoreConfig, StoreInstance } from "../types";
@@ -20,6 +20,10 @@ export function createStoreFactory<Slices extends ReducersMapObject>(config: Sto
     };
 
     const encryptor = createEncryptor(secretKey);
+
+    const storage =
+        (storageImport as any).default ??
+        storageImport;
 
     const buildReducer = () => {
         // Validar que los reducers sean funciones válidas
