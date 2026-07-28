@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef, ReactNode } from 'react';
-import { BrowserRouter, useRoutes } from 'react-router-dom';
+import { BrowserRouter, useRoutes } from 'react-router';
 import { useSafeContext } from "../../../utils";
 import {
     RouteContext,

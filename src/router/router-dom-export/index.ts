@@ -9,6 +9,6 @@ export {
     BrowserRouter,
     useSearchParams,
     Link
-} from "react-router-dom";
+} from "react-router";
 
-export type { RouteObject, NavigateFunction, Location, Params } from "react-router-dom";
+export type { RouteObject, NavigateFunction, Location, Params } from "react-router";

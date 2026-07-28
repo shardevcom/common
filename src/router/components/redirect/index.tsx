@@ -1,5 +1,5 @@
 import React from "react";
-import { Navigate, NavigateProps, To } from "react-router-dom";
+import { Navigate, NavigateProps, To } from "react-router";
 import { useRouteContext } from "../../context";
 
 /**

@@ -1,5 +1,5 @@
 import React from "react";
-import { RouteObject } from "react-router-dom";
+import { RouteObject } from "react-router";
 import ProtectedRoute from "../components/protected-route";
 import { RouteConfig } from "../types";
 
