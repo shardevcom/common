@@ -2,17 +2,25 @@ import { configureStore, combineReducers, ReducersMapObject, Reducer, UnknownAct
 import { persistStore, persistReducer, PersistConfig } from 'redux-persist';
 import storageImport from 'redux-persist/lib/storage';
 import { createEncryptor } from './encryptor';
+import { createAuthStorageMiddleware } from './auth-storage';
 import { authReducer} from "../slices/auth.slice";
 import { StateFromReducersMapObject, StoreConfig, StoreInstance } from "../types";
 import { PersistState } from "redux-persist/es/types";
+import { StorageBackend, purgeStorage, purgeStorageByPredicate, purgeStorageByPrefix, purgeStorageKeys, PurgeTarget } from "../../utils/storage";
 
 
+export * from './encryptor';
+export * from './auth-storage';
 export const defaultSlices: ReducersMapObject = {
     auth: authReducer,
 };
 
+export const KEY_PREFIX = 'persist:';
+
+export const createPersistKey = (keyName: string) => `${KEY_PREFIX}${keyName}`;
+
 export function createStoreFactory<Slices extends ReducersMapObject>(config: StoreConfig<Slices>): StoreInstance {
-    const { initialState, keyName, secretKey } = config;
+    const { initialState, keyName, secretKey, purgeKeys } = config;
 
     const registeredReducers: ReducersMapObject = {
         ...defaultSlices,
@@ -21,16 +29,11 @@ export function createStoreFactory<Slices extends ReducersMapObject>(config: Sto
 
     const encryptor = createEncryptor(secretKey);
 
-    const storage =
-        (storageImport as any).default ??
-        storageImport;
+    const storage: StorageBackend =
+        config.storage ??
+        ((storageImport as any).default ?? storageImport);
 
     const buildReducer = () => {
-        // Validar que los reducers sean funciones válidas
-        /**const validReducers = Object.fromEntries(
-            Object.entries(registeredReducers).filter(([_, reducer]) => typeof reducer === 'function')
-        ); **/
-
         const appReducer = combineReducers(registeredReducers) as Reducer<StateFromReducersMapObject<Slices>> & {
             _persist: PersistState;
         };
@@ -66,9 +69,13 @@ export function createStoreFactory<Slices extends ReducersMapObject>(config: Sto
                 },
             });
 
-            return config.middlewares
-                ? baseMiddleware.concat(config.middlewares)
-                : baseMiddleware;
+            const authMiddleware = createAuthStorageMiddleware(storage, config.authStorageKey);
+            const middlewares = [
+                ...(config.middlewares ?? []),
+                ...(authMiddleware ? [authMiddleware] : []),
+            ];
+
+            return baseMiddleware.concat(middlewares);
         },
     });
 
@@ -92,10 +99,28 @@ export function createStoreFactory<Slices extends ReducersMapObject>(config: Sto
         }
     };
 
+    const purge = async (target: PurgeTarget = {}) => {
+        const ownKeys = [createPersistKey(keyName), ...(purgeKeys ?? [])];
+        const keys = [...ownKeys, ...(target.keys ?? [])];
+
+        if (target.prefix !== undefined || target.predicate) {
+            const byTarget = target.prefix !== undefined
+                ? await purgeStorageByPrefix(storage, target.prefix)
+                : await purgeStorageByPredicate(storage, target.predicate!);
+            const byKeys = await purgeStorageKeys(storage, keys);
+
+            const purged = Array.from(new Set([...byKeys.purged, ...byTarget.purged])).sort();
+            return { purged, remaining: byTarget.remaining };
+        }
+
+        return purgeStorage(storage, { ...target, keys });
+    };
+
     return {
         store,
         persist,
         addReducers,
+        purge,
         registeredReducers, // opcional, útil para debug
     };
 }

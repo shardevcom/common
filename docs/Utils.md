@@ -73,6 +73,51 @@ Obtiene la ubicacion actual del navegador y expone:
 - `location`
 - `error`
 
+## Storage
+
+El modulo `storage` expone utilidades puras, tipadas y agnosticas del dominio de la app para purgar claves de almacenamiento de forma dirigida y deterministica.
+
+Es agnostic del backend (funciona con `localStorage`, `sessionStorage` o mocks) y de los nombres de las claves: cada app declara que claves limpiar.
+
+### Backend de storage
+
+```ts
+interface StorageBackend {
+  getItem(key: string): string | null;
+  setItem(key: string, value: string): void;
+  removeItem(key: string): void;
+  key?(index: number): string | null;
+  readonly length?: number;
+  clear?(): void;
+}
+```
+
+### Funciones
+
+- `purgeStorageKeys(storage, keys)` - elimina claves exactas, ordenadas y deduplicadas.
+- `purgeStorageByPrefix(storage, prefix)` - elimina todas las claves que empiecen con un prefijo.
+- `purgeStorageByPredicate(storage, predicate)` - elimina claves que cumplan un predicado.
+- `purgeStorage(storage, target)` - despacha segun el objetivo `{ keys | prefix | predicate }`.
+- `createStoragePurger(storage)` - crea un helper atado a un storage concreto.
+- `createMemoryStorage(initial?)` - backend en memoria, util para pruebas y SSR.
+- `countStorageKeys(storage)` / `listStorageKeys(storage)` - introspectores.
+
+### Ejemplo
+
+```ts
+import { purgeStorageKeys } from "@shardev/common";
+
+// CASA session cleanup: la app declara sus claves sensibles
+purgeStorageKeys(localStorage, ["access_token", "refresh_token", "persist:admin"]);
+```
+
+```ts
+import { createStoragePurger } from "@shardev/common";
+
+const purger = createStoragePurger(sessionStorage);
+purger.purgeByPrefix("persist:");
+```
+
 ## Utilidades internas relevantes
 
 Aunque no todas son helpers de uso cotidiano, hay utilidades internas que sostienen otras capas:

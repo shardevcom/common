@@ -96,12 +96,7 @@ Este enfoque permite cambiar la implementacion concreta sin reescribir la mayor 
 La libreria exporta:
 
 - Todo `store`, `auth`, `data`, `realtime`, `router`, `utils` y `factory`.
-- Adapters desde subrutas de paquete:
-  - `@shardev/common/adapters/auth/ability`
-  - `@shardev/common/adapters/data/rest`
-  - `@shardev/common/adapters/data/supabase`
-  - `@shardev/common/adapters/realtime/firebase`
-  - `@shardev/common/adapters/realtime/reverb`
+- Adapters (`AuthAbilityAdapter`, `DataRestAdapter`, `DataSupabaseAdapter`, `RealtimeFirebaseAdapter`, `RealtimeReverbAdapter`) desde la entrada principal `@shardev/common`.
 
 ## Notas importantes sobre el estado actual del codigo
 

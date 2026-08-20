@@ -11,7 +11,7 @@ Los adapters son la pieza que conecta los contratos del paquete con implementaci
 Ruta publica:
 
 ```ts
-import { AuthAbilityAdapter } from "@shardev/common/adapters/auth/ability";
+import { AuthAbilityAdapter } from "@shardev/common";
 ```
 
 Uso recomendado:
@@ -27,7 +27,7 @@ Uso recomendado:
 Ruta publica:
 
 ```ts
-import { DataRestAdapter } from "@shardev/common/adapters/data/rest";
+import { DataRestAdapter } from "@shardev/common";
 ```
 
 Uso recomendado:
@@ -41,7 +41,7 @@ Uso recomendado:
 Ruta publica:
 
 ```ts
-import { DataSupabaseAdapter } from "@shardev/common/adapters/data/supabase";
+import { DataSupabaseAdapter } from "@shardev/common";
 ```
 
 Uso recomendado:
@@ -56,7 +56,7 @@ Uso recomendado:
 Ruta publica:
 
 ```ts
-import { RealtimeFirebaseAdapter } from "@shardev/common/adapters/realtime/firebase";
+import { RealtimeFirebaseAdapter } from "@shardev/common";
 ```
 
 Uso recomendado:
@@ -68,7 +68,7 @@ Uso recomendado:
 Ruta publica:
 
 ```ts
-import { RealtimeReverbAdapter } from "@shardev/common/adapters/realtime/reverb";
+import { RealtimeReverbAdapter } from "@shardev/common";
 ```
 
 Uso recomendado:

@@ -30,6 +30,9 @@ interface StoreConfig<TSlices> {
   secretKey: string;
   slices?: ReducersMapObject<TSlices>;
   middlewares?: Middleware[];
+  storage?: StorageBackend;   // backend inyectable (por defecto localStorage)
+  purgeKeys?: string[];       // claves adicionales a purgar al cambiar de version
+  authStorageKey?: string;    // clave donde reflejar access_token (opcional; sin ella no se escribe nada externo)
 }
 ```
 
@@ -58,12 +61,14 @@ export function RootStoreProvider({ children }: { children: React.ReactNode }) {
 
 ## Persistencia y versionado
 
-`StoreProvider` compara `secretKey` contra una clave almacenada en `localStorage`:
+`StoreProvider` compara `secretKey` contra una clave almacenada en el storage (`version${keyName}`):
 
-- si cambia, limpia el almacenamiento local
+- si cambia, purga SOLO las claves propias de la app: `version${keyName}`, la clave de persistencia `persist:${keyName}` y las declaradas en `purgeKeys`
 - luego vuelve a guardar la version nueva
 
-Esto permite invalidar estado persistido cuando cambias la estructura esperada o la clave de cifrado.
+Esto permite invalidar estado persistido cuando cambias la estructura esperada o la clave de cifrado, sin borrar sesiones de otras apps del mismo origen (cumplimiento tipo CASA).
+
+> Antes se usaba `localStorage.clear()`. Ahora la purga es dirigida y deterministica, gracias al modulo `utils/storage`.
 
 ## Reducers dinamicos
 
@@ -120,8 +125,11 @@ interface AuthState {
 
 ### Acciones
 
-- `setAuth(payload)`: fusiona datos del usuario autenticado y persiste `access_token` en `localStorage`.
-- `initAuth()`: reinicia el usuario y elimina `access_token`.
+- `setAuth(payload)`: fusiona datos del usuario autenticado en el estado. Si `authStorageKey` está declarado en la config, un middleware refleja `access_token` en el storage inyectable bajo esa clave.
+- `logout()`: reinicia el usuario y (si `authStorageKey` está declarado) elimina la clave reflejada. Alinea con el dispatch `auth/logout` de los adapters de Realtime.
+- `initAuth()`: reinicia el usuario y (si `authStorageKey` está declarado) elimina la clave reflejada.
+
+> El slice NO toca `localStorage` directamente: los reducers son puros y todo efecto de storage vive en middleware con clave configurable. Si no se declara `authStorageKey`, el token solo existe en el estado persistido y cifrado.
 
 ## createStoreFactory
 
@@ -133,9 +141,29 @@ La fabrica retorna:
 - `persist`
 - `addReducers`
 - `registeredReducers`
+- `purge(target?)` - purga dirigida de storage (por defecto elimina `persist:${keyName}` y las claves de `purgeKeys`)
+
+### Purga dirigida desde la instancia
+
+```ts
+const { purge } = createStoreFactory({
+  keyName: "dashboard",
+  secretKey: "dashboard-v1",
+  purgeKeys: ["access_token"],
+});
+
+// al cerrar sesion: limpia la persistencia + claves declaradas
+purge();
+```
+
+Tambien puedes pasar un objetivo personalizado:
+
+```ts
+purge({ prefix: "dashboard:" });
+```
 
 ## Consideraciones operativas
 
-- `localStorage.clear()` se ejecuta cuando cambia la version asociada a `secretKey`.
+- La purga de version usa `utils/storage`: jamas se invoca `clear()` global, para no borrar claves de otras apps del mismo origen.
 - El slice `auth` siempre se agrega aunque no declares reducers personalizados.
 - El cifrado protege el estado persistido, pero la clave vive en frontend; no debe considerarse un mecanismo de seguridad absoluta.

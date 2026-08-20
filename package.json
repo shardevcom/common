@@ -12,56 +12,6 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    },
-    "./adapters/auth/ability": {
-      "types": "./dist/adapters/auth/ability.d.ts",
-      "import": "./dist/adapters/auth/ability.js",
-      "require": "./dist/adapters/auth/ability.cjs"
-    },
-    "./adapters/auth/ability-adapter": {
-      "types": "./dist/adapters/auth/ability.d.ts",
-      "import": "./dist/adapters/auth/ability.js",
-      "require": "./dist/adapters/auth/ability.cjs"
-    },
-    "./adapters/data/rest": {
-      "types": "./dist/adapters/data/rest.d.ts",
-      "import": "./dist/adapters/data/rest.js",
-      "require": "./dist/adapters/data/rest.cjs"
-    },
-    "./adapters/data/rest-adapter": {
-      "types": "./dist/adapters/data/rest.d.ts",
-      "import": "./dist/adapters/data/rest.js",
-      "require": "./dist/adapters/data/rest.cjs"
-    },
-    "./adapters/data/supabase": {
-      "types": "./dist/adapters/data/supabase.d.ts",
-      "import": "./dist/adapters/data/supabase.js",
-      "require": "./dist/adapters/data/supabase.cjs"
-    },
-    "./adapters/data/supabase-adapter": {
-      "types": "./dist/adapters/data/supabase.d.ts",
-      "import": "./dist/adapters/data/supabase.js",
-      "require": "./dist/adapters/data/supabase.cjs"
-    },
-    "./adapters/realtime/firebase": {
-      "types": "./dist/adapters/realtime/firebase.d.ts",
-      "import": "./dist/adapters/realtime/firebase.js",
-      "require": "./dist/adapters/realtime/firebase.cjs"
-    },
-    "./adapters/realtime/firebase-adapter": {
-      "types": "./dist/adapters/realtime/firebase.d.ts",
-      "import": "./dist/adapters/realtime/firebase.js",
-      "require": "./dist/adapters/realtime/firebase.cjs"
-    },
-    "./adapters/realtime/reverb": {
-      "types": "./dist/adapters/realtime/reverb.d.ts",
-      "import": "./dist/adapters/realtime/reverb.js",
-      "require": "./dist/adapters/realtime/reverb.cjs"
-    },
-    "./adapters/realtime/reverb-adapter": {
-      "types": "./dist/adapters/realtime/reverb.d.ts",
-      "import": "./dist/adapters/realtime/reverb.js",
-      "require": "./dist/adapters/realtime/reverb.cjs"
     }
   },
   "files": [
