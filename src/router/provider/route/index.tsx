@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef, ReactNode } from 'react';
+import React, { useState, useLayoutEffect, useRef, ReactNode } from 'react';
 import { BrowserRouter, useRoutes } from 'react-router';
 import { useSafeContext } from "../../../utils";
 import {
@@ -27,19 +27,21 @@ export const RouterProvider = <T extends AuthUser>({
     const parentContext = useSafeContext<RouteContextType<T> | null>(RouteContext);
     const hasRegistered = useRef(false);
 
-    // Si somos un hijo, registramos las rutas en el contexto del padre
-    useEffect(() => {
+    // Si somos un hijo, registramos las rutas en el contexto del padre.
+    // Usamos useLayoutEffect para registrar antes del paint y evitar un flash en blanco.
+    useLayoutEffect(() => {
         if (parentContext && !hasRegistered.current) {
             parentContext.addRoutes(newRoutes);
             hasRegistered.current = true;
         }
     }, [parentContext, newRoutes]);
 
-    // SI HAY PADRE: Solo actuamos como pasarela de contexto
+    // SI HAY PADRE: Solo actuamos como pasarela de contexto.
+    // No renderizamos <InnerRouter /> aquí porque el router ya corre en el root
+    // y las rutas registradas las matchea el InnerRouter del padre.
     if (parentContext) {
         return (
             <RouteContext.Provider value={parentContext}>
-                <InnerRouter />
                 {children}
             </RouteContext.Provider>
         );
