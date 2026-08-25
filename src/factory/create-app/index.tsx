@@ -1,6 +1,6 @@
 import React, { ComponentType, ReactNode } from 'react';
 import { Middleware, ReducersMapObject } from '@reduxjs/toolkit';
-import { useSafeContext } from "../../utils";
+import {StorageBackend, useSafeContext} from "../../utils";
 import {
     StateFromReducersMapObject,
     StoreConfig,
@@ -20,18 +20,24 @@ export interface SetupOptions<TSlices extends ReducersMapObject> {
     slices?: TSlices;
     middlewares?: Middleware[];
     initialState?: Partial<StateFromReducersMapObject<TSlices>>;
+    storage?: StorageBackend;
+    authStorageKey?: string;
+    purgeKeys?: string[];
     props?: Record<string, any>;
 }
 
 export function createApp<TSlices extends ReducersMapObject>({
-                                       name,
-                                       app,
-                                       appKey = 'my-key-app',
-                                       slices,
-                                       middlewares = [],
-                                       initialState = {},
-                                       props = {}
-                                   }: SetupOptions<TSlices>): React.FC<any> {
+                                        name,
+                                        app,
+                                        appKey = 'my-key-app',
+                                        slices,
+                                        middlewares = [],
+                                        initialState = {},
+                                        storage,
+                                        authStorageKey,
+                                        purgeKeys = [],
+                                        props = {}
+                                    }: SetupOptions<TSlices>): React.FC<any> {
 
     const Component = app as ComponentType<any>;
 
@@ -44,7 +50,10 @@ export function createApp<TSlices extends ReducersMapObject>({
                 secretKey: appKey,
                 slices,
                 initialState,
-                middlewares
+                middlewares,
+                storage,
+                authStorageKey,
+                purgeKeys
             }
             : undefined;
 

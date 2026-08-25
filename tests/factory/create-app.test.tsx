@@ -12,7 +12,7 @@ vi.mock("redux-persist/integration/react", () => ({
 import { createApp } from "../../src";
 import { RouterProvider } from "../../src";
 import { RouteConfig } from "../../src";
-import { useAppSelector, useStoreContext } from "../../src";
+import { useAppDispatch, useAppSelector, useStoreContext, setAuth } from "../../src";
 
 const hostSlice = createSlice({
     name: "host",
@@ -145,5 +145,65 @@ describe("createApp", () => {
         });
 
         expect(screen.getByTestId("module-state").textContent).toBe("true");
+    });
+
+    it("mirrors access_token to localStorage when authStorageKey is configured", async () => {
+        const TestApp = createApp({
+            name: "auth-mirror-test",
+            app: () => <AuthTestComponent />,
+            appKey: "test-secret",
+            slices: {},
+            authStorageKey: "mi_token_custom",
+            purgeKeys: ["mi_token_custom"],
+        });
+
+        function AuthTestComponent() {
+            const dispatch = useAppDispatch();
+            const token = useAppSelector((s: any) => s.auth?.authUser?.access_token ?? "");
+
+            React.useEffect(() => {
+                dispatch(setAuth({ id: "1", access_token: "token-test", token_type: "Bearer" }));
+            }, [dispatch]);
+
+            return <div data-testid="token">{token}</div>;
+        }
+
+        render(<TestApp />);
+
+        await waitFor(() => {
+            expect(screen.getByTestId("token").textContent).toBe("token-test");
+        });
+
+        expect(localStorage.getItem("mi_token_custom")).toBe("token-test");
+        expect(localStorage.getItem("access_token")).toBeNull();
+    });
+
+    it("does NOT write to localStorage when authStorageKey is not configured", async () => {
+        const TestApp = createApp({
+            name: "auth-no-mirror-test",
+            app: () => <AuthTestComponent />,
+            appKey: "test-secret",
+            slices: {},
+        });
+
+        function AuthTestComponent() {
+            const dispatch = useAppDispatch();
+            const token = useAppSelector((s: any) => s.auth?.authUser?.access_token ?? "");
+
+            React.useEffect(() => {
+                dispatch(setAuth({ id: "1", access_token: "token-test", token_type: "Bearer" }));
+            }, [dispatch]);
+
+            return <div data-testid="token">{token}</div>;
+        }
+
+        render(<TestApp />);
+
+        await waitFor(() => {
+            expect(screen.getByTestId("token").textContent).toBe("token-test");
+        });
+
+        expect(localStorage.getItem("mi_token_custom")).toBeNull();
+        expect(localStorage.getItem("access_token")).toBeNull();
     });
 });
