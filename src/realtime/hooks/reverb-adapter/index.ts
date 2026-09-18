@@ -1,4 +1,4 @@
-import {useEffect, useMemo, useRef} from "react";
+import {useEffect, useRef} from "react";
 import {useStoreContext} from "../../../store";
 import {RealtimeReverbAdapter, RealtimeReverbAdapterConfig} from "../../../adapters";
 
@@ -7,17 +7,18 @@ export const useReverbAdapter = (
 ): RealtimeReverbAdapter | null => {
     const { store } = useStoreContext();
     const adapterRef = useRef<RealtimeReverbAdapter | null>(null);
-
-    const token = useMemo(() => {
-        return store?.getState()?.auth?.authUser?.access_token;
-    }, [store]);
+    // Ref para rastrear el último token conocido sin crear closures estales
+    const lastTokenRef = useRef<string | undefined>(undefined);
 
     useEffect(() => {
         if (adapterRef.current) return;
 
+        const initialToken = store?.getState()?.auth?.authUser?.access_token;
+        lastTokenRef.current = initialToken;
+
         const adapterConfig: RealtimeReverbAdapterConfig = {
             ...config,
-            token,
+            token: initialToken,
             onUnauthorized: () => {
                 console.warn("[Reverb] Unauthorized - session may have expired");
                 store?.dispatch?.({ type: "auth/logout" });
@@ -40,14 +41,16 @@ export const useReverbAdapter = (
     }, []);
 
     useEffect(() => {
-        if (!adapterRef.current || !token) return;
-        return store?.subscribe(() => {
+        if (!store) return;
+        const unsubscribe = store.subscribe(() => {
             const newToken = store.getState()?.auth?.authUser?.access_token;
-            if (newToken !== token) {
-                adapterRef.current?.setAuthToken?.(newToken);
+            if (newToken !== lastTokenRef.current && adapterRef.current) {
+                lastTokenRef.current = newToken;
+                adapterRef.current.setAuthToken?.(newToken);
             }
         });
-    }, [store, token]);
+        return unsubscribe;
+    }, [store]);
 
     return adapterRef.current;
 };

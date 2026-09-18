@@ -74,7 +74,52 @@ import { RealtimeReverbAdapter } from "@shardev/common";
 Uso recomendado:
 
 - apps con backend Laravel y Reverb
-- flujos websocket por canal
+- flujos websocket por canal (publico, privado o presencia)
+- proyectos donde el token de autenticacion rota durante la sesion
+
+#### Peer dependencies requeridas
+
+```bash
+npm install laravel-echo pusher-js
+```
+
+Versiones minimas: `laravel-echo >= 2.2`, `pusher-js >= 8.4`.
+
+#### Uso directo (sin hook)
+
+Solo necesario si montas el adapter fuera del ciclo de React:
+
+```ts
+import { RealtimeReverbAdapter } from "@shardev/common";
+
+const adapter = new RealtimeReverbAdapter({
+  baseURL: "https://api.example.com",
+  token: "bearer-token",
+  options: {
+    key: "mi-reverb-app-key",
+    wsHost: "ws.example.com",
+    wsPort: 80,
+    wssPort: 443,
+    forceTLS: false,
+  },
+});
+
+adapter.connect();
+
+const subscription = await adapter.subscribe(
+  "orders.42",
+  { channelType: "private", eventName: ".OrderStatusUpdated" },
+  (event) => console.log(event.record)
+);
+
+// Mas tarde:
+subscription.unsubscribe();
+adapter.disconnect();
+```
+
+#### Uso recomendado (con hook)
+
+El hook `useReverbAdapter` gestiona el ciclo de vida, el token y la reconexion de forma automatica. Ver [documentacion de Realtime](./Realtime.md#usereverbadapter).
 
 ## Criterios para escoger
 

@@ -138,6 +138,10 @@ export class DataRestAdapter extends BaseDataAdapter implements DataAdapter {
                 formData.append('metadata', JSON.stringify(params.metadata));
             }
 
+            if (params.storage) {
+                formData.append('storage', JSON.stringify(params.storage));
+            }
+
             const response = await this.client.post<DataProviderResponse<TResponseData>>(`/${resource}/upload`, formData, {
                 headers: {
                     'Content-Type': undefined,
@@ -253,7 +257,7 @@ export class DataRestAdapter extends BaseDataAdapter implements DataAdapter {
                 `/${resource}/import`,
                 formData,
                 {
-                    headers: { "Content-Type": "multipart/form-data" },
+                    headers: { "Content-Type": undefined },
                 }
             );
             return response.data;

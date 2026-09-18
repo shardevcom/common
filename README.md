@@ -41,7 +41,7 @@ Dependiendo de lo que uses, tu proyecto tambien necesitara algunas dependencias 
 - `@supabase/supabase-js` para el adapter Supabase
 - `@casl/ability` para el adapter de permisos por habilidades
 - `firebase` para el adapter realtime Firebase
-- `socket.io-client` para el adapter realtime Reverb
+- `laravel-echo` y `pusher-js` para el adapter realtime Reverb
 - `uuid` para carga de archivos en Supabase
 
 ## Ejemplo rapido

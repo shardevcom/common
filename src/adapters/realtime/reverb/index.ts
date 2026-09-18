@@ -209,7 +209,7 @@ export class RealtimeReverbAdapter extends BaseRealtimeAdapter implements Realti
             wssPort: wssPort ?? 443,
             forceTLS: forceTLS ?? false,
             enabledTransports: enabledTransports ?? ["ws", "wss"],
-            authEndpoint: authEndpoint ?? `${this.baseURL ?? ''}/broadcasting/auth`,
+            authEndpoint: authEndpoint ?? `${(this.baseURL ?? '').replace(/\/$/, '')}/broadcasting/auth`,
             auth: {
                 headers: {
                     "Accept": "application/json",
@@ -220,22 +220,7 @@ export class RealtimeReverbAdapter extends BaseRealtimeAdapter implements Realti
             },
         });
 
-        if (this.echo.connector) {
-            this.setupConnector(this.echo.connector);
-        }
-
         this.bindConnectionEvents();
-        this.connect();
-    }
-
-    private setupConnector(connector: any) {
-        if (connector.options) {
-            connector.options = {
-                ...connector.options,
-                cluster: "mt1",
-                disableStats: true,
-            };
-        }
     }
 
     private bindConnectionEvents() {

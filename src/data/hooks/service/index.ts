@@ -969,7 +969,9 @@ export function useResourceService<
                     ).forEach(([k, v]) => {
                         formData.append(
                             k,
-                            String(v)
+                            v !== null && typeof v === "object"
+                                ? JSON.stringify(v)
+                                : String(v)
                         );
                     });
                 }
