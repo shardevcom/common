@@ -4,7 +4,7 @@ import { AuthUser, BasePermissionAdapter } from "../../../auth";
 export class AuthAbilityAdapter<T extends AuthUser> extends BasePermissionAdapter<T> {
     private ability: PureAbility<[string, string]>;
 
-    public static defaultActions = ['view', 'create', 'update', 'remove', 'manage', 'delete', 'edit'];
+    public static defaultActions = ['view', 'create', 'update', 'remove', 'manage', 'delete', 'edit', 'import', 'export'];
 
     constructor(
         protected authUser: T,
@@ -27,14 +27,29 @@ export class AuthAbilityAdapter<T extends AuthUser> extends BasePermissionAdapte
         const addPermission = (permission: any) => {
             if (!permission?.name) return;
 
+            // Filtrar por guard si está definido
+            if (guard && permission.guard_name && permission.guard_name !== guard) {
+                return;
+            }
+
             const rawName = permission.name.trim();
+
+            // 🚀 Regla especial: Si el permiso es 'manage' o 'manage:all', se concede acceso total
+            if (rawName === 'manage' || rawName === 'manage:all' || rawName === '*:*') {
+                can('manage', 'all');
+                return;
+            }
+
             const match = rawName.match(/^([^:.\s-]+)[:.\s-](.+)$/);
 
             if (match) {
                 const firstPart = match[1].toLowerCase();
                 const secondPart = match[2];
 
-                if (knownActions.includes(firstPart)) {
+                if (firstPart === 'manage') {
+                    // Soporta permisos como 'manage:users' -> concede 'manage' sobre el recurso 'users'
+                    can('manage', secondPart);
+                } else if (knownActions.includes(firstPart)) {
                     can(firstPart, secondPart);
                 } else {
                     can("view", rawName);
@@ -44,31 +59,25 @@ export class AuthAbilityAdapter<T extends AuthUser> extends BasePermissionAdapte
             }
         };
 
-        if (auth?.roles) {
-            const isSuperAdmin = auth.roles.some(
-                (role: any) => (role.name === 'Super Admin' || role.name === 'admin') && role.guard_name === guard
-            );
+        // 1. Extraer y aplanar todos los permisos (provenientes de roles o permisos directos del usuario)
+        const allPermissions: any[] = [];
 
-            if (isSuperAdmin) {
-                can('manage', 'all');
-            } else {
-                auth.roles.forEach((role: any) => {
-                    role.permissions?.forEach((permission: any) => {
-                        if (permission.guard_name === guard) {
-                            addPermission(permission);
-                        }
-                    });
-                });
-            }
-        }
-
-        if (auth?.permissions?.length > 0) {
-            auth.permissions.forEach((permission: any) => {
-                if (permission.guard_name === guard) {
-                    addPermission(permission);
+        if (Array.isArray(auth?.roles)) {
+            auth.roles.forEach((role: any) => {
+                if (Array.isArray(role?.permissions)) {
+                    allPermissions.push(...role.permissions);
                 }
             });
         }
+
+        if (Array.isArray(auth?.permissions)) {
+            allPermissions.push(...auth.permissions);
+        }
+
+        // 2. Evaluar cada permiso de forma agnóstica a los roles
+        allPermissions.forEach((permission) => {
+            addPermission(permission);
+        });
 
         return build();
     }
