@@ -7,11 +7,12 @@ export const useReverbAdapter = (
 ): RealtimeReverbAdapter | null => {
     const { store } = useStoreContext();
     const adapterRef = useRef<RealtimeReverbAdapter | null>(null);
-    // Ref para rastrear el último token conocido sin crear closures estales
     const lastTokenRef = useRef<string | undefined>(undefined);
+    const unsubscribeRef = useRef<(() => void) | null>(null);
 
     useEffect(() => {
         if (adapterRef.current) return;
+        if (!store) return;
 
         const initialToken = store?.getState()?.auth?.authUser?.access_token;
         lastTokenRef.current = initialToken;
@@ -32,16 +33,6 @@ export const useReverbAdapter = (
         adapterRef.current = adapter;
         adapter.connect();
 
-        return () => {
-            if (adapterRef.current) {
-                adapterRef.current.disconnect();
-                adapterRef.current = null;
-            }
-        };
-    }, []);
-
-    useEffect(() => {
-        if (!store) return;
         const unsubscribe = store.subscribe(() => {
             const newToken = store.getState()?.auth?.authUser?.access_token;
             if (newToken !== lastTokenRef.current && adapterRef.current) {
@@ -49,8 +40,19 @@ export const useReverbAdapter = (
                 adapterRef.current.setAuthToken?.(newToken);
             }
         });
-        return unsubscribe;
-    }, [store]);
+        unsubscribeRef.current = unsubscribe;
+
+        return () => {
+            if (unsubscribeRef.current) {
+                unsubscribeRef.current();
+                unsubscribeRef.current = null;
+            }
+            if (adapterRef.current) {
+                adapterRef.current.disconnect();
+                adapterRef.current = null;
+            }
+        };
+    }, [store, config]);
 
     return adapterRef.current;
 };

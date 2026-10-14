@@ -1,5 +1,4 @@
-import {QueryFilter, SortCondition} from "../../data";
-
+import { QueryFilter, SortCondition } from "../../data";
 
 export const normalizeFilterValue = (operator: string, value: any): any => {
     switch (operator) {
@@ -54,8 +53,32 @@ export const renderIncludeTree = (tree: Record<string, any>): string => {
         .join(',');
 };
 
+// Type for Supabase query builder (duck-typed for compatibility)
+export interface SupabaseQueryBuilder {
+    select(columns?: string, options?: { count?: 'exact' | 'planned' | 'estimated'; head?: boolean }): SupabaseQueryBuilder;
+    filter(column: string, operator: string, value: any): SupabaseQueryBuilder;
+    eq(column: string, value: any): SupabaseQueryBuilder;
+    or(expression: string, options?: { foreignTable?: string }): SupabaseQueryBuilder;
+    range(from: number, to: number): SupabaseQueryBuilder;
+    order(column: string, options?: { ascending?: boolean; nullsFirst?: boolean }): SupabaseQueryBuilder;
+    limit(count: number): SupabaseQueryBuilder;
+    single(): Promise<any>;
+    then<TResult1 = any, TResult2 = never>(
+        onfulfilled?: ((value: any) => TResult1 | PromiseLike<TResult1>) | null,
+        onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | null
+    ): Promise<TResult1 | TResult2>;
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | null): Promise<any>;
+    finally(onfinally?: (() => void) | null): Promise<any>;
+    readonly [Symbol.toStringTag]: string;
+}
+
+// Type for Supabase client (duck-typed)
+export interface SupabaseClientLike {
+    from(table: string): SupabaseQueryBuilder;
+}
+
 // 🧠 Función recursiva para aplicar filtros incluyendo OR/AND
-export const applyFilters = (query: any, filters: QueryFilter): any => {
+export const applyFilters = (query: SupabaseQueryBuilder, filters: QueryFilter): SupabaseQueryBuilder => {
     const { AND, OR, ...directFilters } = filters;
 
     if (AND) {
@@ -97,16 +120,24 @@ export const applyFilters = (query: any, filters: QueryFilter): any => {
     return query;
 };
 
-export const buildQuery = <TData>(
+export interface BuildQueryParams {
+    sort?: SortCondition | SortCondition[];
+    filter?: QueryFilter;
+    fields?: string | string[];
+    include?: string | string[];
+    pagination?: { page: number; perPage: number };
+}
+
+/**
+ * Builds a Supabase query with type-safe parameters.
+ * The client parameter is typed as `any` for compatibility with Supabase's complex types,
+ * but the params and return value are fully typed.
+ */
+export const buildQuery = (
     client: any,
     resource: string,
-    params?: Partial<{
-        sort?: SortCondition | SortCondition[];
-        filter?: QueryFilter;
-        fields?: string | string[];
-        include?: string | string[];
-    }>
-) => {
+    params?: BuildQueryParams
+): SupabaseQueryBuilder => {
     let query = client.from(resource);
 
     // Procesar fields
@@ -129,6 +160,13 @@ export const buildQuery = <TData>(
     // Procesar filtros
     if (params?.filter) {
         query = applyFilters(query, params.filter);
+    }
+
+    // Procesar paginación
+    if (params?.pagination) {
+        const from = (params.pagination.page - 1) * params.pagination.perPage;
+        const to = from + params.pagination.perPage - 1;
+        query = query.range(from, to);
     }
 
     // Procesar ordenamiento

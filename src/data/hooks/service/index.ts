@@ -7,13 +7,28 @@ import {
     ProcessApiResponse,
     QueryFilter,
     SortCondition,
+    RateLimitInfo,
 } from "../../types";
 
 import {useData} from "../data";
 
 /**
  * =====================================
- * PAGINATION
+ * GRANULAR HOOKS (NEW - Tree-shakeable)
+ * =====================================
+ */
+
+export {
+    useResourceList,
+    useResourceMutations,
+    useResourceFiles,
+    useResourceExecute,
+    useRateLimitStatus,
+} from "./granular";
+
+/**
+ * =====================================
+ * LEGACY HOOK (Backward Compatible)
  * =====================================
  */
 
@@ -48,6 +63,8 @@ export interface EntityServiceState<
     initialized: boolean;
     lastUpdatedAt?: number;
     error?: E | null;
+    isRateLimited: boolean;
+    rateLimitInfo?: RateLimitInfo;
 }
 
 /**
@@ -153,6 +170,8 @@ export function useResourceService<
         initialized: false,
         lastUpdatedAt: undefined,
         error: null,
+        isRateLimited: false,
+        rateLimitInfo: undefined,
     });
 
     /**
@@ -307,6 +326,14 @@ export function useResourceService<
                     error
                 ) as DataProviderResponse<R, E>;
 
+            const originalError = processed.originalError;
+            const isRateLimited: boolean = !!(
+                originalError &&
+                typeof originalError === 'object' &&
+                'status' in originalError &&
+                (originalError as Record<string, unknown>).status === 429
+            );
+
             setState((prev) => ({
                 ...prev,
                 isLoading: false,
@@ -315,6 +342,8 @@ export function useResourceService<
                 isDeleting: false,
                 isImporting: false,
                 isExporting: false,
+                isRateLimited,
+                rateLimitInfo: processed.rateLimit,
                 error:
                     processed.errors ??
                     (error as E) ??
@@ -467,6 +496,8 @@ export function useResourceService<
                         lastUpdatedAt: Date.now(),
                         isLoading: false,
                         isFetching: false,
+                        isRateLimited: false,
+                        rateLimitInfo: processed.rateLimit,
                         error: null,
                     }));
                 } else {
@@ -530,6 +561,14 @@ export function useResourceService<
                     ) as DataProviderResponse<any, E>;
 
                 stopLoading("generic");
+
+                if (processed.rateLimit) {
+                    setState((prev) => ({
+                        ...prev,
+                        isRateLimited: false,
+                        rateLimitInfo: processed.rateLimit,
+                    }));
+                }
 
                 return processed;
             } catch (err) {
@@ -1112,6 +1151,20 @@ export function useResourceService<
 
     /**
      * =====================================
+     * RATE LIMIT HELPERS
+     * =====================================
+     */
+
+    const clearRateLimit = useCallback(() => {
+        setState((prev) => ({
+            ...prev,
+            isRateLimited: false,
+            rateLimitInfo: undefined,
+        }));
+    }, []);
+
+    /**
+     * =====================================
      * AUTO FETCH
      * =====================================
      */
@@ -1159,6 +1212,7 @@ export function useResourceService<
             setSearch,
             setFilter,
             setSort,
+            clearRateLimit,
         }),
         [
             state,
@@ -1174,6 +1228,7 @@ export function useResourceService<
             importFromFile,
             exportToFile,
             execute,
+            clearRateLimit,
         ]
     );
 }

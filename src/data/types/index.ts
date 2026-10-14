@@ -24,13 +24,21 @@ export interface PaginationLink {
     active: boolean;
 }
 
+export interface RateLimitInfo {
+    limit: number;
+    remaining: number;
+    reset: number;
+    retryAfter?: number;
+}
+
 export interface DataProviderResponse<T = any, E = Record<string, unknown>> {
     success: boolean;
     message: string;
-    errors?: E; // 👈 Flexible y opcional
+    errors?: E;
     data: T | null;
     status: 'success' | 'error' | 'pending' | string;
     originalError?: unknown;
+    rateLimit?: RateLimitInfo;
 }
 
 export function ProcessApiResponse<T, E = Record<string, unknown>>(
@@ -70,6 +78,15 @@ export interface StorageConfig {
     [key: string]: any;
 }
 
+export interface RateLimitConfig {
+    maxRetries: number;
+    baseDelayMs: number;
+    maxDelayMs: number;
+    respectRetryAfter: boolean;
+    onRateLimit?: (info: RateLimitInfo) => void;
+    onForbidden?: () => void;
+}
+
 export interface DataAdapterConfig {
     token?: string
     baseURL: string;
@@ -77,7 +94,8 @@ export interface DataAdapterConfig {
     reducers?: Record<string, Reducer<any, UnknownAction>>;
     options?: Record<string, any>;
     headers?: Record<string, string>;
-    defaultStorage?: StorageConfig
+    defaultStorage?: StorageConfig;
+    rateLimit?: Partial<RateLimitConfig>;
 }
 
 export type GenericFilterOperator = string;
@@ -180,6 +198,7 @@ export abstract class BaseDataAdapter {
     protected options?: Record<string, any>;
     protected store?: Store;
     protected defaultStorage?: StorageConfig;
+    protected rateLimitConfig: Required<RateLimitConfig>;
 
     constructor(config?: DataAdapterConfig) {
         this.baseURL = config?.baseURL;
@@ -188,6 +207,14 @@ export abstract class BaseDataAdapter {
         this.store = config?.store;
         this.reducers = config?.reducers;
         this.options = config?.options;
-        this.defaultStorage = config?.defaultStorage
+        this.defaultStorage = config?.defaultStorage;
+        this.rateLimitConfig = {
+            maxRetries: config?.rateLimit?.maxRetries ?? 3,
+            baseDelayMs: config?.rateLimit?.baseDelayMs ?? 1000,
+            maxDelayMs: config?.rateLimit?.maxDelayMs ?? 30000,
+            respectRetryAfter: config?.rateLimit?.respectRetryAfter ?? true,
+            onRateLimit: config?.rateLimit?.onRateLimit ?? (() => {}),
+            onForbidden: config?.rateLimit?.onForbidden ?? (() => {}),
+        };
     }
 }

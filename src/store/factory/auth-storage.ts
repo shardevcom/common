@@ -24,10 +24,36 @@ export const createAuthStorageMiddleware = (
         try {
             const result = fn();
             if (result instanceof Promise) {
-                result.catch(() => {});
+                result.catch((error) => {
+                    // Log estructurado en lugar de tragar silenciosamente
+                    const errorMessage = error instanceof Error ? error.message : String(error);
+                    console.error('[AuthStorageMiddleware] Storage operation failed:', {
+                        error: errorMessage,
+                        timestamp: new Date().toISOString(),
+                        action: 'storage',
+                    });
+                    // Opcional: emitir evento para monitoring externo
+                    if (typeof window !== 'undefined') {
+                        window.dispatchEvent(new CustomEvent('auth:storage:error', {
+                            detail: { error: errorMessage, timestamp: Date.now() }
+                        }));
+                    }
+                });
             }
-        } catch {
-            // efectos de storage nunca deben romper el flujo de reducers
+        } catch (error) {
+            // Log estructurado en lugar de tragar silenciosamente
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            console.error('[AuthStorageMiddleware] Storage operation failed:', {
+                error: errorMessage,
+                timestamp: new Date().toISOString(),
+                action: 'storage',
+            });
+            // Opcional: emitir evento para monitoring externo
+            if (typeof window !== 'undefined') {
+                window.dispatchEvent(new CustomEvent('auth:storage:error', {
+                    detail: { error: errorMessage, timestamp: Date.now() }
+                }));
+            }
         }
     };
 

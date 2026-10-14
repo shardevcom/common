@@ -2,7 +2,8 @@ import {
     createClient,
     RealtimeChannel,
     SignInWithPasswordCredentials,
-    SupabaseClient
+    SupabaseClient,
+    PostgrestError,
 } from "@supabase/supabase-js";
 
 import {v4 as uuidv4} from 'uuid';
@@ -15,17 +16,33 @@ import {
     DataProviderResponse,
     FileType,
     QueryFilter,
-    StorageConfig
+    RateLimitConfig,
+    RateLimitInfo,
+    StorageConfig,
 } from "../../../data";
 
 import {AuthUser} from "../../../auth";
 import {buildQuery} from "../../../utils";
+import { CircuitBreaker, CircuitState, CircuitOpenError, CircuitBreakerConfig } from "../../../utils/circuit-breaker";
+
+interface SupabaseQueryError {
+    status: number;
+    message: string;
+    code?: string;
+    headers?: Record<string, string>;
+    response?: { headers?: Record<string, string> };
+}
+
+export interface DataSupabaseAdapterConfig extends DataAdapterConfig {
+    circuitBreaker?: Partial<CircuitBreakerConfig>;
+}
 
 export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter {
     private client: SupabaseClient;
     private subscriptions: Record<string, RealtimeChannel> = {};
+    private readonly circuitBreaker: CircuitBreaker;
 
-    constructor(config: DataAdapterConfig) {
+    constructor(config: DataSupabaseAdapterConfig) {
         super(config);
 
         if (!config.baseURL) {
@@ -35,6 +52,20 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
         if (!config.token) {
             throw new Error("Supabase anon key is required");
         }
+
+        this.circuitBreaker = new CircuitBreaker({
+            failureThreshold: config?.circuitBreaker?.failureThreshold ?? 5,
+            successThreshold: config?.circuitBreaker?.successThreshold ?? 2,
+            timeout: config?.circuitBreaker?.timeout ?? 30000,
+            excludedStatusCodes: config?.circuitBreaker?.excludedStatusCodes ?? [401, 403, 404, 422],
+            onStateChange: (state) => {
+                if (state === CircuitState.OPEN) {
+                    console.warn('[DataSupabaseAdapter] Circuit breaker OPEN - requests will fail fast');
+                } else if (state === CircuitState.CLOSED) {
+                    console.log('[DataSupabaseAdapter] Circuit breaker CLOSED - service recovered');
+                }
+            },
+        });
 
         const authToken = this.getAuthToken();
 
@@ -64,12 +95,10 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
         this.store?.dispatch({type: 'RESET_STATE'});
     }
 
-    private isAuthError(err: unknown): boolean {
+    private isAuthError(err: unknown): err is SupabaseQueryError & { status: 401 } {
         if (!err || typeof err !== 'object') return false;
-
-        const e = err as any;
+        const e = err as SupabaseQueryError;
         const message = typeof e.message === 'string' ? e.message.toLowerCase() : '';
-
         return (
             e.status === 401 ||
             e.code === "PGRST301" ||
@@ -78,12 +107,81 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
         );
     }
 
+    private isRateLimitError(err: unknown): err is SupabaseQueryError & { status: 429 } {
+        if (!err || typeof err !== 'object') return false;
+        const e = err as SupabaseQueryError;
+        return e.status === 429 || e.code === '429' || (typeof e.message === 'string' && e.message.toLowerCase().includes('rate limit'));
+    }
+
+    private isServerError(err: unknown): err is SupabaseQueryError & { status: number } {
+        if (!err || typeof err !== 'object') return false;
+        const e = err as SupabaseQueryError;
+        return e.status >= 500;
+    }
+
+    private isNetworkError(err: unknown): boolean {
+        if (!err || typeof err !== 'object') return false;
+        const e = err as any;
+        return e.name === 'TypeError' && e.message?.includes('fetch');
+    }
+
+    private parseRateLimitInfo(err: unknown): RateLimitInfo | undefined {
+        if (!err || typeof err !== 'object') return undefined;
+        const e = err as SupabaseQueryError;
+
+        const headers = e.headers || e.response?.headers || {};
+        const limit = headers['x-ratelimit-limit'] ?? headers['ratelimit-limit'];
+        const remaining = headers['x-ratelimit-remaining'] ?? headers['ratelimit-remaining'];
+        const reset = headers['x-ratelimit-reset'] ?? headers['ratelimit-reset'];
+        const retryAfter = headers['retry-after'];
+
+        if (limit === undefined && remaining === undefined && reset === undefined && retryAfter === undefined) {
+            return undefined;
+        }
+
+        return {
+            limit: parseInt(limit as string, 10) || 0,
+            remaining: parseInt(remaining as string, 10) || 0,
+            reset: parseInt(reset as string, 10) || Math.floor(Date.now() / 1000) + 60,
+            retryAfter: retryAfter ? this.parseRetryAfter(retryAfter as string) : undefined,
+        };
+    }
+
+    private parseRetryAfter(value: string): number {
+        const seconds = parseInt(value, 10);
+        if (!isNaN(seconds)) {
+            return seconds;
+        }
+        const date = new Date(value).getTime();
+        if (!isNaN(date)) {
+            return Math.max(0, Math.ceil((date - Date.now()) / 1000));
+        }
+        return 60;
+    }
+
+    private calculateDelay(attempt: number, retryAfter?: number): number {
+        const { baseDelayMs, maxDelayMs, respectRetryAfter } = this.rateLimitConfig;
+
+        if (respectRetryAfter && retryAfter !== undefined && retryAfter > 0) {
+            return Math.min(retryAfter * 1000, maxDelayMs);
+        }
+
+        const exponentialDelay = baseDelayMs * Math.pow(2, attempt);
+        const jitter = Math.random() * 0.3 * exponentialDelay;
+        return Math.min(exponentialDelay + jitter, maxDelayMs);
+    }
+
+    private sleep(ms: number): Promise<void> {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+
     private createResponse<T>(
         data: T | null,
         error: unknown,
-        status?: number | string
+        status?: number | string,
+        rateLimit?: RateLimitInfo
     ): DataProviderResponse<T> {
-        const err = error as any;
+        const err = error as SupabaseQueryError | Error | null;
 
         return {
             success: !error,
@@ -93,51 +191,132 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
             errors: error
                 ? {
                     message: err?.message,
-                    code: err?.code,
-                    details: err?.details
+                    code: 'code' in (err ?? {}) ? (err as any).code : undefined,
+                    details: 'details' in (err ?? {}) ? (err as any).details : undefined,
                 }
                 : undefined,
-            originalError: error
+            originalError: error,
+            rateLimit,
         };
     }
 
-    private async handle<T>(fn: (client: SupabaseClient) => Promise<any>) {
-        try {
-            const {data, error, status} = await fn(this.client);
+    private async handleWithRetry<T>(fn: (client: SupabaseClient) => Promise<any>): Promise<DataProviderResponse<T>> {
+        return this.circuitBreaker.execute(async () => {
+            let attempt = 0;
+            const maxRetries = this.rateLimitConfig.maxRetries;
 
-            if (error) {
-                if (this.isAuthError(error)) {
-                    await this.resetSession();
-                    return this.createResponse<T>(null, error, 401);
+            while (true) {
+                try {
+                    const {data, error, status} = await fn(this.client);
+
+                    if (error) {
+                        if (this.isAuthError(error)) {
+                            await this.resetSession();
+                            return this.createResponse<T>(null, error, 401);
+                        }
+
+                        if (this.isRateLimitError(error) && attempt < maxRetries) {
+                            attempt++;
+                            const rateLimitInfo = this.parseRateLimitInfo(error);
+                            const delay = this.calculateDelay(attempt, rateLimitInfo?.retryAfter);
+
+                            if (rateLimitInfo) {
+                                this.rateLimitConfig.onRateLimit?.(rateLimitInfo);
+                            }
+
+                            console.warn(`Rate limited (429). Attempt ${attempt}/${maxRetries}. Retrying in ${delay}ms...`);
+                            await this.sleep(delay);
+                            continue;
+                        }
+
+                        if (this.isServerError(error) && attempt < maxRetries) {
+                            attempt++;
+                            const delay = this.calculateDelay(attempt);
+                            console.warn(`Server error (${error.status}). Attempt ${attempt}/${maxRetries}. Retrying in ${delay}ms...`);
+                            await this.sleep(delay);
+                            continue;
+                        }
+
+                        if (this.isNetworkError(error) && attempt < maxRetries) {
+                            attempt++;
+                            const delay = this.calculateDelay(attempt);
+                            console.warn(`Network error. Attempt ${attempt}/${maxRetries}. Retrying in ${delay}ms...`);
+                            await this.sleep(delay);
+                            continue;
+                        }
+
+                        const rateLimitInfo = this.parseRateLimitInfo(error);
+                        return this.createResponse<T>(null, error, status, rateLimitInfo);
+                    }
+
+                    return this.createResponse<T>(data, null, status);
+
+                } catch (error) {
+                    if (this.isAuthError(error)) {
+                        await this.resetSession();
+                        return this.createResponse<T>(null, error, 401);
+                    }
+
+                    if (this.isRateLimitError(error) && attempt < maxRetries) {
+                        attempt++;
+                        const rateLimitInfo = this.parseRateLimitInfo(error);
+                        const delay = this.calculateDelay(attempt, rateLimitInfo?.retryAfter);
+
+                        if (rateLimitInfo) {
+                            this.rateLimitConfig.onRateLimit?.(rateLimitInfo);
+                        }
+
+                        console.warn(`Rate limited (429). Attempt ${attempt}/${maxRetries}. Retrying in ${delay}ms...`);
+                        await this.sleep(delay);
+                        continue;
+                    }
+
+                    if (this.isServerError(error) && attempt < maxRetries) {
+                        attempt++;
+                        const delay = this.calculateDelay(attempt);
+                        console.warn(`Server error. Attempt ${attempt}/${maxRetries}. Retrying in ${delay}ms...`);
+                        await this.sleep(delay);
+                        continue;
+                    }
+
+                    if (this.isNetworkError(error) && attempt < maxRetries) {
+                        attempt++;
+                        const delay = this.calculateDelay(attempt);
+                        console.warn(`Network error. Attempt ${attempt}/${maxRetries}. Retrying in ${delay}ms...`);
+                        await this.sleep(delay);
+                        continue;
+                    }
+
+                    const rateLimitInfo = this.parseRateLimitInfo(error);
+                    return this.createResponse<T>(null, error, 500, rateLimitInfo);
                 }
-
-                return this.createResponse<T>(null, error, status);
             }
-
-            return this.createResponse<T>(data, null, status);
-
-        } catch (error) {
-            if (this.isAuthError(error)) {
-                await this.resetSession();
-                return this.createResponse<T>(null, error, 401);
+        }).catch((error) => {
+            if (error instanceof CircuitOpenError) {
+                const rateLimitInfo: RateLimitInfo = {
+                    limit: 0,
+                    remaining: 0,
+                    reset: Math.floor(Date.now() / 1000) + error.retryAfter,
+                    retryAfter: error.retryAfter,
+                };
+                return this.createResponse<T>(null, error, 503, rateLimitInfo);
             }
-
-            return this.createResponse<T>(null, error, 500);
-        }
+            throw error;
+        });
     }
 
     async fetch<T>(resource: string, params?: any) {
-        return this.handle<T>((c) => buildQuery(c, resource, params));
+        return this.handleWithRetry<T>((c) => buildQuery(c, resource, params));
     }
 
     async fetchOne<T>(resource: string, params?: any) {
-        return this.handle<T>((c) =>
+        return this.handleWithRetry<T>((c) =>
             buildQuery(c, resource, params).limit(1).single()
         );
     }
 
     async fetchMany<T>(resource: string, params?: any) {
-        return this.handle<T>((c) => {
+        return this.handleWithRetry<T>((c) => {
             let q = buildQuery(c, resource, params);
 
             if (params?.pagination) {
@@ -151,7 +330,7 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
     }
 
     async fetchById<T>(resource: string, id: string | number) {
-        return this.handle<T>(async (c) =>
+        return this.handleWithRetry<T>(async (c) =>
             c.from(resource).select('*').eq('id', id).single()
         );
     }
@@ -160,7 +339,7 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
         resource: string,
         data: Partial<P>
     ) {
-        return this.handle<T>(async (c) => {
+        return this.handleWithRetry<T>(async (c) => {
             const payload = (
                 Array.isArray(data)
                     ? data
@@ -183,7 +362,7 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
         params: { id?: string | number; filter?: QueryFilter },
         data: Partial<P>
     ) {
-        return this.handle<T>(async (c) => {
+        return this.handleWithRetry<T>(async (c) => {
             const payload = data as Record<string, unknown>;
 
             let q = c.from(resource).update(payload);
@@ -207,7 +386,7 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
         data: Partial<P>,
         uniqueFields?: [string, ...string[]]
     ) {
-        return this.handle<T>(async (c) => {
+        return this.handleWithRetry<T>(async (c) => {
             const payload = (
                 Array.isArray(data)
                     ? data
@@ -231,7 +410,7 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
         resource: string,
         params: { id?: string | number; filter?: QueryFilter }
     ) {
-        return this.handle<T>(async (c) => {
+        return this.handleWithRetry<T>(async (c) => {
             let q = c.from(resource).delete();
 
             if (params.id !== undefined) {
@@ -253,7 +432,7 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
         metadata?: Record<string, unknown>;
         storage?: StorageConfig;
     }) {
-        return this.handle<T>(async (c) => {
+        return this.handleWithRetry<T>(async (c) => {
             const files = Array.isArray(params.file) ? params.file : [params.file];
             const results = [];
 
@@ -326,7 +505,7 @@ export class DataSupabaseAdapter extends BaseDataAdapter implements DataAdapter 
     }
 
     async count<T = number>(resource: string, filter?: QueryFilter) {
-        return this.handle<T>(async (c) => {
+        return this.handleWithRetry<T>(async (c) => {
             let q = c.from(resource).select('*', {count: 'exact', head: true});
 
             if (filter) {
