@@ -211,9 +211,11 @@ export class RealtimeReverbAdapter extends BaseRealtimeAdapter implements Realti
             enabledTransports: enabledTransports ?? ["ws", "wss"],
             authEndpoint: authEndpoint ?? `${(this.baseURL ?? '').replace(/\/$/, '')}/broadcasting/auth`,
             auth: {
+                // Sin Content-Type: pusher-js ya fija application/x-www-form-urlencoded y envía el cuerpo
+                // en ese formato. En XHR, volver a fijarlo concatena los valores ("…urlencoded, application/json"):
+                // RoadRunner rechaza ese MIME con 500 y Laravel no puede leer channel_name.
                 headers: {
                     "Accept": "application/json",
-                    "Content-Type": "application/json",
                     ...(auth?.headers ?? {}),
                     ...(this.token ? { "Authorization": `Bearer ${this.token}` } : {}),
                 },
